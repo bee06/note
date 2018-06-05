@@ -1,0 +1,49 @@
+
+# tcp 为什么会出现粘包 拆包的问题？
+1.消息的定长，例如定1000个字节
+2.就是在包尾增加回车或空格等特殊字符作为切割，典型的FTP协议
+3.将消息分为消息头消息体。例如 dubbo
+
+
+----------1------consumer请求编码----------------------
+-->NettyCodecAdapter.InternalEncoder.encode
+  -->DubboCountCodec.encode
+    -->ExchangeCodec.encode
+      -->ExchangeCodec.encodeRequest
+        -->DubboCodec.encodeRequestData
+dubbo的消息头是一个定长的 16个字节。
+第1-2个字节：是一个魔数数字：就是一个固定的数字 
+第3个字节：是双向(有去有回) 或单向（有去无回）的标记 
+第四个字节：？？？ （request 没有第四个字节）
+第5-12个字节：请求id：long型8个字节。异步变同步的全局唯一ID，用来做consumer和provider的来回通信标记。
+第13-16个字节：消息体的长度，也就是消息头+请求数据的长度。
+
+----------2------provider 请求解码----------------------
+--NettyCodecAdapter.InternalDecoder.messageReceived
+  -->DubboCountCodec.decode
+    -->ExchangeCodec.decode
+      -->ExchangeCodec.decodeBody
+
+----------3------provider响应结果编码----------------------
+-->NettyCodecAdapter.InternalEncoder.encode
+  -->DubboCountCodec.encode
+    -->ExchangeCodec.encode
+      -->ExchangeCodec.encodeResponse
+        -->DubboCodec.encodeResponseData//先写入一个字节 这个字节可能是RESPONSE_NULL_VALUE  RESPONSE_VALUE  RESPONSE_WITH_EXCEPTION
+dubbo的消息头是一个定长的 16个字节。
+第1-2个字节：是一个魔数数字：就是一个固定的数字 
+第3个字节：序列号组件类型，它用于和客户端约定的序列号编码号
+第四个字节：它是response的结果响应码  例如 OK=20
+第5-12个字节：请求id：long型8个字节。异步变同步的全局唯一ID，用来做consumer和provider的来回通信标记。
+第13-16个字节：消息体的长度，也就是消息头+请求数据的长度。
+
+----------4------consumer响应结果解码----------------------
+--NettyCodecAdapter.InternalDecoder.messageReceived
+  -->DubboCountCodec.decode
+    -->ExchangeCodec.decode
+      -->DubboCodec.decodeBody
+        -->DecodeableRpcResult.decode//根据RESPONSE_NULL_VALUE  RESPONSE_VALUE  RESPONSE_WITH_EXCEPTION进行响应的处理
+
+
+
+
