@@ -1,0 +1,9 @@
+
+dubbo的provider和consumer的配置文件中，如果同时配置了timeout的超时时间，dubbo默认以consumer中配置的时间为准
+Provider上应尽量多配置些Consumer端的属性，让Provider实现者一开始就思考Provider的服务特点与服务质量。配置之间存在着覆盖，具体规则如下：
+1. 方法级配置别优于接口级别，即小Scope优先
+2. Consumer端配置优于Provider配置，优于全局配置
+3. Dubbo Hard Code的配置值（默认）
+
+Dubbo协议超时实现使用了Future模式，主要涉及类DubboInvoker，ResponseFuture, DefaultFuture。
+ResponseFuture.get()在请求还未处理完或未到超时前一直是wait状态；响应达到后，设置请求状态，并进行notify唤醒
