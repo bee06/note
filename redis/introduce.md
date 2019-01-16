@@ -19,6 +19,12 @@ redis不是一个普通的k-v存储，它实际上是一个数据结构服务器
 String类型是最简单的类型、它是Memcached唯一的数据类型，所以新人非常自然的使用的类型。
 redis键可以使是字符串，当我们也使用字符串类型作为值时, 我们将一个字符串映射到另一个字符串，字符串数据类型对于许多用例都很有用，如缓存 html 片段或页面
 ，让我们用字符串来演示下，使用redis-cli
+```
+> set mykey somevalue
+OK
+> get mykey
+"somevalue"
+```
 
 ## Lists
 
