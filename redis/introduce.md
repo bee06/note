@@ -16,5 +16,7 @@ redis不是一个普通的k-v存储，它实际上是一个数据结构服务器
 * 尝试坚持使用模式，例如 "object-type:id" 是一个好的想法，如 "user: 1000" "."或"-"通常用于多字段,如 "comment: 1234 : reply.to" 或者 "comment : 1234 : reply-to"
 * 最大允许512M
 ## Strings
+String类型是最简单的类型、它是Memcached唯一的数据类型，所以新人非常自然的使用的类型。
+
 ## Lists
 
