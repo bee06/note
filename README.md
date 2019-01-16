@@ -6,5 +6,6 @@
 ### zookeeper
 1. **[源码整体介绍](zookeeper/source_introduce.md)**
 ### redis
+1. **[数据类型](redis/data_type_introduce.md)**
 ### 思维
 1. **[如何学习](thinking/how_do_study.md)**
