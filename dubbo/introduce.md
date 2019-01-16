@@ -8,14 +8,14 @@
        它里面有一个很重要的方法 Result invoke(Invocation invocation)，
   Invocation是包含了需要执行的方法和参数等重要信息，目前它只有2个实现类RpcInvocation MockInvocation
       它有3种类型的Invoker
-    1.本地执行类的Invoker
+    ** 本地执行类的Invoker
       server端：要执行 demoService.sayHello，就通过InjvmExporter来进行反射执行demoService.sayHello就可以了。
       
-    2.远程通信类的Invoker
+    ** 远程通信类的Invoker
         client端：要执行 demoService.sayHello，它封装了DubboInvoker进行远程通信，发送要执行的接口给server端。
         server端：采用了AbstractProxyInvoker执行了DemoServiceImpl.sayHello,然后将执行结果返回发送给client.
         
-    3.多个远程通信执行类的Invoker聚合成集群版的Invoker
+    ** 多个远程通信执行类的Invoker聚合成集群版的Invoker
         client端：要执行 demoService.sayHello，就要通过AbstractClusterInvoker来进行负载均衡，DubboInvoker进行远程通信，发送要执行的接口给server端。
         server端：采用了AbstractProxyInvoker执行了DemoServiceImpl.sayHello,然后将执行结果返回发送给client.
         
