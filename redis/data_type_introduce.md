@@ -34,6 +34,7 @@ OK
 > set mykey newval xx
 OK
 ```
+incr 命令将字符串值解析为整数，递增一个
 
 ## Lists
 
