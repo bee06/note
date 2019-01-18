@@ -34,7 +34,7 @@ OK
 > set mykey newval xx
 OK
 ```
-incr 命令将字符串值解析为整数，递增一个
+incr 命令将字符串值解析为整数，递增一个.最后将获得的值设置为新值.还有其他类似的命令, 如 incrby、decr 和 decrby.实际上在内部，他们使用是相同的命令
 
 ## Lists
 
