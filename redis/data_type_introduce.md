@@ -278,3 +278,52 @@ redis 有用于测试成员的命令,例如, 检查元素是否存在
 8) "Hedy Lamarr"
 9) "Alan Turing"
 ```
+使用WITHSCORES参数也可以返回分数：
+```
+> zrange hackers 0 -1 withscores
+1) "Alan Turing"
+2) "1912"
+3) "Hedy Lamarr"
+4) "1914"
+5) "Claude Shannon"
+6) "1916"
+7) "Alan Kay"
+8) "1940"
+9) "Anita Borg"
+10) "1949"
+11) "Richard Stallman"
+12) "1953"
+13) "Sophie Wilson"
+14) "1957"
+15) "Yukihiro Matsumoto"
+16) "1965"
+17) "Linus Torvalds"
+18) "1969"
+```
+Operating on ranges
+排序集比这更强大,他们可以在范围内操作。让我们得到所有出生到1950年的人,我们使用ZRANGEBYSCORE命令来执行此操作
+```
+> zrangebyscore hackers -inf 1950
+1) "Alan Turing"
+2) "Hedy Lamarr"
+3) "Claude Shannon"
+4) "Alan Kay"
+5) "Anita Borg"
+```
+我们要求Redis以负无穷大和1950之间的分数返回所有元素（包括两个极值）。
+也可以删除元素范围。让我们从排序集中删除1940年到1960年间出生的所有黑客：
+```
+> zremrangebyscore hackers 1940 1960
+(integer) 4
+```
+ZREMRANGEBYSCORE可能不是最好的命令名，但它可能非常有用，并返回已删除元素的数量。
+为有序集元素定义的另一个非常有用的操作是get-rank操作。可以询问有序元素集中元素的位置。
+```
+> zrank hackers "Anita Borg"
+(integer) 4
+```
+考虑到按降序排序的元素，ZREVRANK命令也可用于获得排名。
+### Lexicographical scores
+随着新版本2.8，引入了一项新功能，允许按字典顺序获取范围，假设排序集中的元素都插入了相同的相同分数，所以保证没有排序规则，每个Redis实例都会回复相同的输出）。
+
+使用词典范围操作的主要命令是ZRANGEBYLEX，ZREVRANGEBYLEX，ZREMRANGEBYLEX和ZLEXCOUNT。
