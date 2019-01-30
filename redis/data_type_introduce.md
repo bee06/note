@@ -159,6 +159,41 @@ OK
 上面的 ltrim 命令告诉 redis 只获取索引0到2中的元素列表,其他一切都会被丢弃
 
 ## Redis Hashes
+redis 哈希看起来正是人们所期望的 "哈希", 并带有字段值对
+```
+> hmset user:1000 username antirez birthyear 1977 verified 1
+OK
+> hget user:1000 username
+"antirez"
+> hget user:1000 birthyear
+"1977"
+> hgetall user:1000
+1) "username"
+2) "antirez"
+3) "birthyear"
+4) "1977"
+5) "verified"
+6) "1"
+```
+虽然哈希很容易表示对象, 但实际上可以放在哈希中的字段数量没有实际限制 (可用内存除外)，因此, 您可以在应用程序中以许多不同的方式使用哈希， hmset命令 设置哈希的多个字段，hget命令检索单个字段，hmget命令 类似于 hget, 返回了一组值.
+
+
+```
+> hmget user:1000 username birthyear no-such-field
+1) "antirez"
+2) "1977"
+3) (nil)
+```
+有一些命令也可以对单个字段执行操作, 例如 hinccrby:
+```
+> hincrby user:1000 birthyear 10
+(integer) 1987
+> hincrby user:1000 birthyear 10
+(integer) 1997
+```
+您可以在 **[hash命令](https://redis.io/commands#hash)** 查看完整的hash命令
+值得注意的是, 小哈希 (即, 几个具有小值的元素) 在内存中以特殊的方式进行编码, 使它们具有很高的内存效率。
+
 
 ## set
 redis 集是无序的字符串集合,sadd 命令将新元素添加到集合中,如果给定的元素已经存在, 也可以对集执行许多其他操作, 如测试,多个集合之间的交集、联合或差异, 依此类推
@@ -179,3 +214,67 @@ redis 有用于测试成员的命令,例如, 检查元素是否存在
 (integer) 0
 ```
 "3" 是集合的成员, 而 "30" 不是,集很好地表示对象之间的关系,例如, 我们可以很容易地使用集来实现标记
+
+对这个问题建模的一个简单方法是为我们要标记的每个对象设置一个集，该集合包含与对象关联的标记的 id
+
+
+## Redis Sorted sets
+排序集是一种数据类型, 类似于 "集" 和 "哈希" 之间的混合，有序集由唯一的，非重复的字符串元素组成，
+所以在某种意义上，排序集也是一个集合
+
+但是，内部集合中的元素不是有序的，排序集中的每个元素都与浮点值相关联，称为得分（这就是为什么类型也类似于散列，因为每个元素都映射到一个值），此外，排序集合中的元素按顺序排列，它们按照以下规则排序：
+* 如果A和B是两个具有不同分数的元素，那么A> B，如果A.score是> B.score。
+* 如果A和B具有完全相同的分数，则A> B，如果A字符串按字典顺序大于B字符串。 A和B字符串不能相等，因为有序集只有唯一元素
+让我们从一个简单的例子开始，添加一些选定的黑客名称作为排序的集合元素，他们的出生年份为“得分”
+```
+> zadd hackers 1940 "Alan Kay"
+(integer) 1
+> zadd hackers 1957 "Sophie Wilson"
+(integer) 1
+> zadd hackers 1953 "Richard Stallman"
+(integer) 1
+> zadd hackers 1949 "Anita Borg"
+(integer) 1
+> zadd hackers 1965 "Yukihiro Matsumoto"
+(integer) 1
+> zadd hackers 1914 "Hedy Lamarr"
+(integer) 1
+> zadd hackers 1916 "Claude Shannon"
+(integer) 1
+> zadd hackers 1969 "Linus Torvalds"
+(integer) 1
+> zadd hackers 1912 "Alan Turing"
+(integer) 1
+```
+如您所见，ZADD与SADD类似,但需要一个额外的参数（放在要添加的元素之前）这是得分,ZADD也是可变的
+所以你可以自由指定多个得分 - 值对,即使上面例子没有使用他
+对于排序集，返回按出生年份排序的黑客列表是微不足道的，因为实际上它们已经排序了。
+实现说明：
+ 排序集通过包含跳过列表和散列表的双数据结构实现  ，因此，每次添加元素时，Redis都会执行O（log（N））操作 
+ 这很好，但是当我们要求排序的元素时，Redis根本不需要做任何工作，它已经全部排序。
+ ```
+ > zrange hackers 0 -1
+1) "Alan Turing"
+2) "Hedy Lamarr"
+3) "Claude Shannon"
+4) "Alan Kay"
+5) "Anita Borg"
+6) "Richard Stallman"
+7) "Sophie Wilson"
+8) "Yukihiro Matsumoto"
+9) "Linus Torvalds"
+ ```
+说明：0和-1表示从元素索引0到最后一个元素（1就像在LRANGE命令中一样工作）
+如果我想以相反的方式进行排序，最小到最老的怎么办？使用ZREVRANGE而不是ZRANGE：
+```
+> zrevrange hackers 0 -1
+1) "Linus Torvalds"
+2) "Yukihiro Matsumoto"
+3) "Sophie Wilson"
+4) "Richard Stallman"
+5) "Anita Borg"
+6) "Alan Kay"
+7) "Claude Shannon"
+8) "Hedy Lamarr"
+9) "Alan Turing"
+```
