@@ -1,0 +1,1 @@
+Redis Sentinel为Redis提供更高性能性，
