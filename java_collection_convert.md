@@ -166,7 +166,7 @@ List<String> resultList = Splitter.on(' ')
 String[] strArray = resultList.toArray(new String[0]);
 ```
 
-## ArrayList  to Constructor
+## Collection to ArrayList
 ### Using the ArrayList Constructor
 ```
 ArrayList<Foo> newList = new ArrayList<>(srcCollection);
