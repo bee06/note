@@ -175,3 +175,29 @@ ArrayList<Foo> newList = new ArrayList<>(srcCollection);
 ```
 ArrayList<Foo> newList = srcCollection.stream().collect(toCollection(ArrayList::new));
 ```
+
+## List to Set
+### With plain Java
+```
+public void givenUsingCoreJava_whenListConvertedToSet_thenCorrect() {
+    List<Integer> sourceList = Arrays.asList(0, 1, 2, 3, 4, 5);
+    Set<Integer> targetSet = new HashSet<>(sourceList);
+}
+```
+### With Guava
+```
+public void givenUsingGuava_whenListConvertedToSet_thenCorrect() {
+    List<Integer> sourceList = Lists.newArrayList(0, 1, 2, 3, 4, 5);
+    Set<Integer> targetSet = Sets.newHashSet(sourceList);
+}
+```
+### With Commons Collections
+
+```
+public void givenUsingCommonsCollections_whenListConvertedToSet_thenCorrect() {
+    List<Integer> sourceList = Lists.newArrayList(0, 1, 2, 3, 4, 5);
+    Set<Integer> targetSet = new HashSet<>(6);
+    CollectionUtils.addAll(targetSet, sourceList);
+}
+```
+
