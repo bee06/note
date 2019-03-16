@@ -265,4 +265,22 @@ public void givenUsingCoreJava_whenMapValuesConvertedToS_thenCorrect() {
     Set<String> targetSet = new HashSet<>(sourceMap.values());
 }
 ```
-
+## List to Map
+### Before jdk8
+```
+public Map<Integer, Animal> convertListBeforeJava8(List<Animal> list) {
+    Map<Integer, Animal> map = new HashMap<>();
+    for (Animal animal : list) {
+        map.put(animal.getId(), animal);
+    }
+    return map;
+}
+```
+### with jdk8
+```
+public Map<Integer, Animal> convertListAfterJava8(List<Animal> list) {
+    Map<Integer, Animal> map = list.stream()
+      .collect(Collectors.toMap(Animal::getId, animal -> animal));
+    return map;
+}
+```
