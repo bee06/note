@@ -200,4 +200,27 @@ public void givenUsingCommonsCollections_whenListConvertedToSet_thenCorrect() {
     CollectionUtils.addAll(targetSet, sourceList);
 }
 ```
+## Set to List
+### 
+```
+public void givenUsingCoreJava_whenSetConvertedToList_thenCorrect() {
+   Set<Integer> sourceSet = Sets.newHashSet(0, 1, 2, 3, 4, 5);
+   List<Integer> targetList = new ArrayList<>(sourceSet);
+}
+```
+### With Guava
+```
+public void givenUsingGuava_whenSetConvertedToList_thenCorrect() {
+    Set<Integer> sourceSet = Sets.newHashSet(0, 1, 2, 3, 4, 5);
+    List<Integer> targetList = Lists.newArrayList(sourceSet);
+}
+```
+### With Commons Collections
 
+```
+public void givenUsingCommonsCollections_whenSetConvertedToList_thenCorrect() {
+    Set<Integer> sourceSet = Sets.newHashSet(0, 1, 2, 3, 4, 5);
+    List<Integer> targetList = new ArrayList<>(6);
+    CollectionUtils.addAll(targetList, sourceSet);
+}
+```
