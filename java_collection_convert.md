@@ -166,3 +166,12 @@ List<String> resultList = Splitter.on(' ')
 String[] strArray = resultList.toArray(new String[0]);
 ```
 
+## ArrayList  to Constructor
+### Using the ArrayList Constructor
+```
+ArrayList<Foo> newList = new ArrayList<>(srcCollection);
+```
+### Stream Api
+```
+ArrayList<Foo> newList = srcCollection.stream().collect(toCollection(ArrayList::new));
+```
