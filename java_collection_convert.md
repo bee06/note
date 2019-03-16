@@ -201,7 +201,7 @@ public void givenUsingCommonsCollections_whenListConvertedToSet_thenCorrect() {
 }
 ```
 ## Set to List
-### 
+### With plain java
 ```
 public void givenUsingCoreJava_whenSetConvertedToList_thenCorrect() {
    Set<Integer> sourceSet = Sets.newHashSet(0, 1, 2, 3, 4, 5);
@@ -224,3 +224,45 @@ public void givenUsingCommonsCollections_whenSetConvertedToList_thenCorrect() {
     CollectionUtils.addAll(targetList, sourceSet);
 }
 ```
+## Map Values to Array
+### With plain java
+```
+@Test
+public void givenUsingCoreJava_whenMapValuesConvertedToArray_thenCorrect() {
+    Map<Integer, String> sourceMap = createMap();
+ 
+    Collection<String> values = sourceMap.values();
+    String[] targetArray = values.toArray(new String[values.size()]);
+}
+```
+
+## Map Values to List
+### With plain java
+```
+@Test
+public void givenUsingCoreJava_whenMapValuesConvertedToList_thenCorrect() {
+    Map<Integer, String> sourceMap = createMap();
+ 
+    List<String> targetList = new ArrayList<>(sourceMap.values());
+}
+```
+### With Guava
+```
+@Test
+public void givenUsingGuava_whenMapValuesConvertedToList_thenCorrect() {
+    Map<Integer, String> sourceMap = createMap();
+ 
+    List<String> targetList = Lists.newArrayList(sourceMap.values());
+}
+```
+## Map Values to Set
+### With plain java
+```
+@Test
+public void givenUsingCoreJava_whenMapValuesConvertedToS_thenCorrect() {
+    Map<Integer, String> sourceMap = createMap();
+ 
+    Set<String> targetSet = new HashSet<>(sourceMap.values());
+}
+```
+
