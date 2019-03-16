@@ -111,3 +111,58 @@ public void givenUsingCommonsCollections_whenSetConvertedToArray_thenCorrect() {
     Integer[] targetArray = sourceSet.toArray(new Integer[sourceSet.size()]);
 }
 ```
+## Array to String
+### Arrays.toString()  
+```
+String[] strArray = { "one", "two", "three" };
+String joinedString = Arrays.toString(strArray);
+```
+###  StringBuilder.append()
+```
+String[] strArray = { "Convert", "Array", "With", "Java" };
+StringBuilder stringBuilder = new StringBuilder();
+for (int i = 0; i < strArray.length; i++) {
+    stringBuilder.append(strArray[i]);
+}
+String joinedString = stringBuilder.toString();
+```
+### Java Streams API
+```
+String joinedString = Arrays
+    .stream(new String[]{ "Convert", "With", "Java", "Streams" })
+    .collect(Collectors.joining());
+```
+
+### StringUtils.join()
+
+```
+String joinedString = StringUtils.join(new String[]{ "Convert", "With", "Apache", "Commons" });
+
+```
+
+### Joiner.join()
+```
+String joinedString = Joiner.on("")
+        .skipNulls()
+        .join(new String[]{ "Convert", "With", "Guava", null });
+```
+## Array of Strings
+### String.split()
+```
+String[] strArray = "loremipsum".split("");
+```
+
+### StringUtils.split()
+```
+String[] splitted = StringUtils.split("lorem ipsum dolor sit amet");
+```
+
+### Splitter.split()
+```
+List<String> resultList = Splitter.on(' ')
+    .trimResults()
+    .omitEmptyStrings()
+    .splitToList("lorem ipsum dolor sit amet");   
+String[] strArray = resultList.toArray(new String[0]);
+```
+
