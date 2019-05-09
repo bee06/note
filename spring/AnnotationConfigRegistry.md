@@ -10,27 +10,34 @@ GenericApplicationContext
 #### 构造方法
 ```
 public AnnotationConfigApplicationContext() {
-		this.reader = new AnnotatedBeanDefinitionReader(this);
-		this.scanner = new ClassPathBeanDefinitionScanner(this);
-	}
-
-	public AnnotationConfigApplicationContext(DefaultListableBeanFactory beanFactory) {
-		super(beanFactory);
-		this.reader = new AnnotatedBeanDefinitionReader(this);
-		this.scanner = new ClassPathBeanDefinitionScanner(this);
-	}
-
-	
-	public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
-		this();
-		register(annotatedClasses);
-		refresh();
-	}
-
-
-	public AnnotationConfigApplicationContext(String... basePackages) {
-		this();
-		scan(basePackages);
-		refresh();
-	}
+	this.reader = new AnnotatedBeanDefinitionReader(this);
+	this.scanner = new ClassPathBeanDefinitionScanner(this);
+}
+public AnnotationConfigApplicationContext(DefaultListableBeanFactory beanFactory) {
+	super(beanFactory);
+	this.reader = new AnnotatedBeanDefinitionReader(this);
+	this.scanner = new ClassPathBeanDefinitionScanner(this);
+}
+public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
+	this();
+	register(annotatedClasses);
+	refresh();
+}
+public AnnotationConfigApplicationContext(String... basePackages) {
+	this();
+	scan(basePackages);
+	refresh();
+}
+```
+#### 方法
+```
+setEnvironment(ConfigurableEnvironment environment)
+setBeanNameGenerator(BeanNameGenerator beanNameGenerator) 
+setScopeMetadataResolver(ScopeMetadataResolver scopeMetadataResolver)
+register(Class<?>... annotatedClasses)
+scan(String... basePackages) 
+registerBean(Class<T> annotatedClass, Object... constructorArguments)
+registerBean(@Nullable String beanName, Class<T> annotatedClass, Object... constructorArguments)
+registerBean(@Nullable String beanName, Class<T> beanClass, @Nullable Supplier<T> supplier,
+			BeanDefinitionCustomizer... customizers)
 ```
