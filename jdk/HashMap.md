@@ -145,6 +145,20 @@ public HashMap(int initialCapacity) {
 public HashMap() {
     this.loadFactor = DEFAULT_LOAD_FACTOR; // all other fields defaulted
 }
+
+/**
+* Constructs a new <tt>HashMap</tt> with the same mappings as the
+* specified <tt>Map</tt>.  The <tt>HashMap</tt> is created with
+* default load factor (0.75) and an initial capacity sufficient to
+* hold the mappings in the specified <tt>Map</tt>.
+*
+* @param   m the map whose mappings are to be placed in this map
+* @throws  NullPointerException if the specified map is null
+*/
+public HashMap(Map<? extends K, ? extends V> m) {
+    this.loadFactor = DEFAULT_LOAD_FACTOR;
+    putMapEntries(m, false);
+}
 ```
 
 ## 内部类
@@ -169,11 +183,38 @@ static class Node<K,V> implements Map.Entry<K,V> {
 ### put
 ### get
 ### resize
+### 计算容器大小
+```
+/**
+* Returns a power of two size for the given target capacity.
+*/
+static final int tableSizeFor(int cap) {
+    int n = cap - 1;
+    n |= n >>> 1;
+    n |= n >>> 2;
+    n |= n >>> 4;
+    n |= n >>> 8;
+    n |= n >>> 16;
+    return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+}
+```
+* >>>是无符号右移操作，  无符号右移，忽略符号位，空位都以0补齐   
+* |是位或操作 0|0=0 1|0=1 0|1=1 1|1=0
+
+栗子：
+    cap=4
+    int n = cap - 1;  // n=3
 
 
 ## 问题
 * 为什么会采用链表+红黑树
-* 什么时候转换
+使用了基于数组的哈希表的结构，数组中每一个元素都是一个链表，把数组中的每一格称为一个桶(bin或bucket)。当数组中已经被使用的桶的数量超过容量和装填因子的积，会进行扩容操作。
+
+由于每一个桶中都是一个单向链表，hash 相同的键值对都会作为一个节点被加入这个链表，当桶中键值对数量过多时会将桶中的单向链表转化为一个树。通过TREEIFY_THRESHOLD、UNTREEIFY_THRESHOLD和MIN_TREEIFY_CAPACITY来控制转换需要的阈值。
+
+在JDK 8之前的 HashMap 中都只是采取了单向链表的方式，哈希碰撞会给查找带来灾难性的影响。在最差的情况下，HashMap 会退化为一个单链表，查找时间由 O(1) 退化为 O(n) 。而在JDK 8中，如果单链表过长则会转换为一颗红黑树，使得最坏情况下查找的时间复杂度为 O(log n) 。红黑树节点的空间占用相较于普通节点要高出许多，通常只有在比较极端的情况下才会由单链表转化为红黑树。
+
+* 什么时候转换红黑树
 * hashmap是如何解决哈希碰撞
 * hashmap是如何计算hash
 
