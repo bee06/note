@@ -123,3 +123,7 @@ raft协议数据只有单向地从leader到follower(成为leader的条件之一�
 一个prospective leader需要将自己的log更新为quorum里面最新的log,然后才好在synchronization阶段将quorum里的其他机器的log都同步到一致.
 
 zab
+
+
+登录zk服务dump stack，发现HashSet复制特别耗时。
+准备升级cn1 5台实例zk版本，从3.4.6升级到3.4.14，解决大量连接重启导致的负载过高问题。
