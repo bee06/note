@@ -15,6 +15,13 @@ procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
  1  0      0 2651976    872 2098468    0    0    57   171  269  445  2  0 97  0  0
 ```
-
-
+### 如何查看输出项
+首先分为5块：
+#### procs
+    * r
+#### memory
+#### swap
+#### io
+#### system
+#### cpu
 
