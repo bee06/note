@@ -7,9 +7,11 @@ curl -X PUT "localhost:9200/user_order_short?pretty" -H 'Content-Type: applicati
     }
 }
 '
+## 删除索引
+curl -X DELETE "http://localhost:9201/user_order_short
 
 ## 创建动态索引
-curl -X PUT "localhost:9200/user_order_short?pretty" -H 'Content-Type: application/json' -d'
+curl -X PUT "http://localhost:9201/user_order_short?pretty"  -d'
 {
   "mappings": {
     "user_orders": {
