@@ -17,4 +17,11 @@
 ### 常用网站导航
 1. **[dubbo官方](http://dubbo.apache.org/zh-cn/index.html)**
 2. **[sentinel](https://github.com/sentinel-group/sentinel-awesome)**
+### 其他牛逼的博客
+1. **[美团的技术网站(非常推荐)](https://tech.meituan.com/)**
+1. **[小米的技术网站](https://xiaomi-info.github.io/)**
+1. **[infoq](https://www.infoq.cn/)**
+1. **[徐靖峰大佬](https://lexburner.github.io/)**
+1. **[Phodal](https://www.phodal.com/)**
+
 
