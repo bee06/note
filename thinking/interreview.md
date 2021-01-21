@@ -1,5 +1,5 @@
-
-一面 hashmap与concurrenthashmap的区别 
+## 一面 
+hashmap与concurrenthashmap的区别 
 垃圾回收算法以及垃圾回收器 
 CMS的回收步骤
  G1和CMS的区别 
@@ -18,6 +18,10 @@ CMS哪个阶段是并发的哪个阶段是串行的？
   volatile和atomic的区别 
   atomic底层是如何实现的
   
-  二面 表锁 行锁 乐观锁 悲观锁的特点和区别 并发工具包有哪些，具体怎么用 Lock和Synchronized的区别 分布式下redis如何保证线程安全 Kafka讲一讲 Docker平时怎么使用的 几种线程池区别 Kafka如何解决数据堆积 kafka消息的存储机制 如何用kafka保证消息的有序性 kafka如何保证并发情况下消息只被消费一次
+  ## 二面
+  表锁 行锁 乐观锁 悲观锁的特点和区别 并发工具包有哪些，具体怎么用 Lock和Synchronized的区别 分布式下redis如何保证线程安全 Kafka讲一讲 Docker平时怎么使用的 几种线程池区别 Kafka如何解决数据堆积 kafka消息的存储机制 如何用kafka保证消息的有序性 kafka如何保证并发情况下消息只被消费一次
   
-  三面 redis用的哪个版本 如何搭建redis集群 redis如何主从同步 redis分布式锁注意事项 redis持久化的方式以及区别 redis持久化方式及区别 my sql数据量多大的时候需要分表 my sql常用的存储引擎及区别 死锁的条件及应对措施 zookeeper的作用：分布式锁、注册服务中心 zookeeper如何实现分布式锁、其他分布式锁怎么实现 分布式事务的解决方案 单点登录怎么实现 秒杀系统怎么来实现
+  ## 三面 
+  * redis用的哪个版本
+  * 如何搭建redis集群 
+  * redis如何主从同步 redis分布式锁注意事项 redis持久化的方式以及区别 redis持久化方式及区别 my sql数据量多大的时候需要分表 my sql常用的存储引擎及区别 死锁的条件及应对措施 zookeeper的作用：分布式锁、注册服务中心 zookeeper如何实现分布式锁、其他分布式锁怎么实现 分布式事务的解决方案 单点登录怎么实现 秒杀系统怎么来实现
