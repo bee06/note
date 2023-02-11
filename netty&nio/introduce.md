@@ -1,19 +1,16 @@
 ## 
-服务的socket在哪里初始化？
-在哪里accept连接？
-理顺服务端启动流程
-
-ServerBootstrap外观，NioServerSocketChannel创建，初始
-化，注册selector，绑定端口，接受新连接
+1. 服务的socket在哪里初始化？ 
+2. 在哪里accept连接？ 
+3. 理顺服务端启动流程 
+4. ServerBootstrap外观，NioServerSocketChannel创建，初始化，注册selector，绑定端口，接受新连接
 
 ## 
-默认情况下，Netty服务端启动多少线程？何时启动？
-Netty如何解决JDK空轮询bug？
-Netty如何保证异步串行无锁化？
-吃透高并发线程模型
-
-深入理解Netty无锁化串行设计，精心设计的reactor线程模型将
-榨干你的cpu，打满你的网卡，让你的应用程序性能爆表
+1. 默认情况下，Netty服务端启动多少线程？何时启动？
+2. Netty如何解决JDK空轮询bug？ 
+3. Netty如何保证异步串行无锁化？ 
+4. 吃透高并发线程模型 
+5. 深入理解Netty无锁化串行设计，精心设计的reactor线程模型将 
+6. 榨干你的cpu，打满你的网卡，让你的应用程序性能爆表
 
 ##
 Netty在哪里检测有新连接接入的？
