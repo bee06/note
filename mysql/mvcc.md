@@ -9,7 +9,18 @@ InnoDB引擎下，运行同一行内容在不同事务之间读写互不干扰�
 学习之前，我们先复习下数据的事务相关知识
 ### 锁类型
 * 快照读
+  * 快照读又叫普通读，也就是利用MVCC机制读取快照中的数据。不加锁的简单的SELECT 都属于快照读，比如这样：
 * 当前读
+  * 当前读读取的是记录的最新版本，读取时会对读取的记录进行加锁, 其他事务就有可能阻塞。加锁的 SELECT，或者对数据进行增删改都会进行当前读。
+    
+  ```
+  SELECT * FROM user LOCK IN SHARE MODE; # 共享锁
+    SELECT * FROM user FOR UPDATE; # 排他锁
+    INSERT INTO user values ... # 排他锁
+    DELETE FROM user WHERE ... # 排他锁
+    UPDATE user SET ... # 排他锁
+  ```
+
 ### 数据库的事务
 ##### 事务的4种隔离级别
 
