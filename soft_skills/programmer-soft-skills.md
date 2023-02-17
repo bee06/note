@@ -1,0 +1,1 @@
+https://github.com/forrestchang/programmer-soft-skills/blob/master/slides-export.pdf
