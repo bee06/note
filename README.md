@@ -13,7 +13,7 @@
 ### 思维
 1. **[如何学习](thinking/how_do_study.md)**
 ### 提高效率
-1. **[工具](dev_tools.md)**
+1. **[工具](opsdev/dev_tools.md)**
 ### 常用网站导航
 1. **[dubbo官方](http://dubbo.apache.org/zh-cn/index.html)**
 2. **[sentinel](https://github.com/sentinel-group/sentinel-awesome)**
