@@ -1,14 +1,14 @@
-下面我看看大多数与CMS收集器调优相关的JVM标志参数。
+### 下面我看看大多数与CMS收集器调优相关的JVM标志参数。
 
--XX：+UseConcMarkSweepGC
-该标志首先是激活CMS收集器。默认HotSpot JVM使用的是并行收集器。
+* -XX：+UseConcMarkSweepGC
+> 该标志首先是激活CMS收集器。默认HotSpot JVM使用的是并行收集器。
 
--XX：UseParNewGC
+* -XX：UseParNewGC
 当使用CMS收集器时，该标志激活年轻代使用多线程并行执行垃圾回收。这令人很惊讶，我们不能简单在并行收集器中重用-XX：UserParNewGC标志，因为概念上年轻代用的算法是一样的。然而，对于CMS收集器，年轻代GC算法和老年代GC算法是不同的，因此年轻代GC有两种不同的实现，并且是两个不同的标志。
 
 注意最新的JVM版本，当使用-XX：+UseConcMarkSweepGC时，-XX：UseParNewGC会自动开启。因此，如果年轻代的并行GC不想开启，可以通过设置-XX：-UseParNewGC来关掉。
 
--XX：+CMSConcurrentMTEnabled
+* -XX：+CMSConcurrentMTEnabled
 当该标志被启用时，并发的CMS阶段将以多线程执行(因此，多个GC线程会与所有的应用程序线程并行工作)。该标志已经默认开启，如果顺序执行更好，这取决于所使用的硬件，多线程执行可以通过-XX：-CMSConcurremntMTEnabled禁用。
 
  -XX：ConcGCThreads
