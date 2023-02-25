@@ -13,4 +13,6 @@ temp.tmp
 .idea
 *.iml
 .DS_Store
+.obsidian/
+.DS_Store
 
