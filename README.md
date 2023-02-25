@@ -19,9 +19,10 @@
 2. **[sentinel](https://github.com/sentinel-group/sentinel-awesome)**
 ### 其他牛逼的博客
 1. **[美团的技术网站(非常推荐)](https://tech.meituan.com/)**
-1. **[小米的技术网站](https://xiaomi-info.github.io/)**
-1. **[infoq](https://www.infoq.cn/)**
-1. **[徐靖峰大佬](https://lexburner.github.io/)**
-1. **[Phodal](https://www.phodal.com/)**
+2. **[小米的技术网站](https://xiaomi-info.github.io/)**
+3. **[infoq](https://www.infoq.cn/)**
+4. **[徐靖峰大佬](https://lexburner.github.io/)**
+5. **[Phodal](https://www.phodal.com/)**
+6. **[倾城之链](https://blog.nicelinks.site/)**
 
 
