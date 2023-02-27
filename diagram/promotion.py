@@ -5,5 +5,4 @@ from diagrams.aws.network import ELB
 import diagrams.programming.flowchart as FC
 
 with Diagram("promotion", show=False,outformat=["png"],direction="TB"):
-    FC.Action("Action") >> [FC.Database("Database"),
-                            FC.Delay("aa")]
+    FC.Action("Action") >> [FC.Database("Database")]
