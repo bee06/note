@@ -1,29 +1,29 @@
 
-Airbnb：htktps://github.com/airbnb
-Alibaba（阿里巴巴）：https://github.com/alibaba
-Apple：https://github.com/apple
-Baidu（百度）：https://github.com/baidu
-bilibili（哔哩哔哩）：https://github.com/Bilibili
-Bytedance Inc（字节跳动）：https://github.com/bytedance
-Close：https://github.com/closeio
-Ctrip, Inc（携程）：https://github.com/ctripcorp
-DiDi（滴滴出行）：https://github.com/didi
-Douban Inc（豆瓣）：https://github.com/douban
-eleme（饿了么）：https://github.com/eleme
-Facebook：https://github.com/facebook
-Google：https://github.com/google
-HUAWEI Noah’s Ark Lab：https://github.com/huawei-noah
-Lyft：https://github.com/lyft
-Medium：https://github.com/Medium
-Meili Inc：https://github.com/meili
-meitu（美图）：https://github.com/meitu
-Netflix, Inc：https://github.com/Netflix
-Tencent（腾讯）：https://github.com/tencent
-Twitter：https://github.com/twitter
-Uber Open Source：https://github.com/uber
-Vimeo：https://github.com/vimeo
-Xiaomi（小米）：https://github.com/xiaomi
-Zhihu（知乎）：https://github.com/zhihu
-罗辑思维 | 得到App：https://github.com/luojilab
-美团：https://github.com/meituan-dianping
-唯品会：https://github.com/vipshop
+*[Airbnb](https://github.com/airbnb)* </br>
+*[Alibaba阿里巴巴](https://github.com/alibaba)* </br>
+*[Apple](https://github.com/apple)* </br>
+*[Baidu](https://github.com/baidu)* </br>
+*[bilibili](https://github.com/Bilibili)* </br>
+*[Bytedance](https://github.com/bytedance)* </br>
+*[Close](https://github.com/closeio)* </br>
+*[Ctrip](https://github.com/ctripcorp)* </br>
+*[DiDi](https://github.com/didi)* </br>
+*[Douban Inc](https://github.com/douban)* </br>
+*[eleme](https://github.com/eleme)* </br>
+*[Facebook](https://github.com/facebook)* </br>
+*[Google](https://github.com/google)* </br>
+*[HUAWEI Noah’s Ark Lab](https://github.com/huawei-noah)* </br>
+*[Lyft](https://github.com/lyft)* </br>
+*[Medium](https://github.com/Medium)* </br>
+*[Meili Inc](https://github.com/meili)* </br>
+*[meitu（美图）](https://github.com/meitu)* </br>
+*[Netflix, Inc](https://github.com/Netflix)* </br>
+*[Tencent（腾讯）](https://github.com/tencent)* </br>
+*[Twitter](https://github.com/twitter)* </br>
+*[Uber Open Source](https://github.com/uber)* </br>
+*[Vimeo](https://github.com/vimeo)* </br>
+*[Xiaomi（小米）](https://github.com/xiaomi)* </br>
+*[Zhihu（知乎）](https://github.com/zhihu)* </br>
+*[罗辑思维 | 得到App](https://github.com/luojilab)* </br>
+*[美团](https://github.com/meituan-dianping)* </br>
+*[唯品会](https://github.com/vipshop)* </br>
