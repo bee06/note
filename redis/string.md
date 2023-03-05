@@ -53,4 +53,6 @@ swap机制，这样会直接拖慢redis。
 
 ### 如何判断碎片
 使用info命令
-mem_fragmentation_ratio = used_memory_rss/ used_memory
+mem_fragmentation_ratio = used_memory_rss/ used_memory;
+
+active-defrag-ignore-bytes 100mb：表示内存碎片的字节数达到 100MB 时，开始清理；active-defrag-threshold-lower 10：表示内存碎片空间占操作系统分配给 Redis 的总空间比例达到 10% 时，开始清理。
