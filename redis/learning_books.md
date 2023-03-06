@@ -4,7 +4,6 @@ theme: gaia
 class: lead
 paginate: uncover
 
-
 ---
 
 # Redis图书推荐
