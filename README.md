@@ -17,6 +17,13 @@
 ### 常用网站导航
 1. **[dubbo官方](http://dubbo.apache.org/zh-cn/index.html)**
 2. **[sentinel](https://github.com/sentinel-group/sentinel-awesome)**
+
+### 后端面试
+1. **[toBeBetterJavaer](https://github.com/itwanger/toBeBetterJavaer)**
+2. **[阿秀的学习笔记](https://interviewguide.cn/)**
+3. **[JavaGuide(Java面试+学习指南)](https://javaguide.cn/)**
+4. **[小林coding](https://xiaolincoding.com/)**
+
 ### 其他牛逼的博客
 1. **[美团的技术网站(非常推荐)](https://tech.meituan.com/)**
 2. **[小米的技术网站](https://xiaomi-info.github.io/)**
