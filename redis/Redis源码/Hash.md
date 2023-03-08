@@ -1,8 +1,9 @@
 ## 问题
 * 说说Redis的Hash底层设计
 
-## 
-
+## 难点
+1. hash算法的冲突
+2. rehash的设计
 
 
 ## redis的rehash是怎么操作过程
