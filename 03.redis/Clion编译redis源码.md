@@ -22,7 +22,7 @@ https://www.jetbrains.com/clion/download/#section=mac
 
 ![clion_check_gcc](image/clion_check_gcc.png)
 
-## 下载redis
+## 下载redis源码
 https://github.com/redis/redis.git
 
 
