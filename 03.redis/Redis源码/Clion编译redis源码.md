@@ -1,5 +1,5 @@
 
-# mac环境上clion编译redis源码
+# mac环境下clion编译redis源码
 ## 准备环境的依赖
 
 ```
@@ -20,7 +20,7 @@ https://www.jetbrains.com/clion/download/#section=mac
 
 ### 在clion 检查下环境是否有问题
 
-![clion_check_gcc](image/clion_check_gcc.png)
+![clion_check_gcc](../image/clion_check_gcc.png)
 
 ## 下载redis源码
 https://github.com/redis/redis.git
@@ -31,13 +31,13 @@ https://github.com/redis/redis.git
 
 ## 执行markfile
 
-![exec_markfile](image/exec_markfile.png)
+![exec_markfile](../image/exec_markfile.png)
 
 * 执行成功
-* ![exec_markfile](image/exec_markfile_success.png)
+* ![exec_markfile](../image/exec_markfile_success.png)
 
 ## 配置
-![exec_markfile](image/compile_source_config.png)
+![exec_markfile](../image/compile_source_config.png)
 
 ## 开始debug
-![exec_markfile](image/compile_success.png)
+![exec_markfile](../image/compile_success.png)
