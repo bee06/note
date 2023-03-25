@@ -4,6 +4,7 @@
 
 ```
 brew install gcc
+brew install make
 xcode-select --install
 ```
 
