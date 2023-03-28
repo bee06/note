@@ -4,6 +4,29 @@
 如果是多个客户端，那我们可以给每个客户端分配一个线程处理每个请求的
 再或者，我们初始化一个线程池，去处理每个客户端的请求
 
+
+## 5中IO模型
+* 任何输入操作都有两个阶段 
+  * 等待数据准备好
+  * 将数据从内核复制到进程
+
+### 阻塞 I/O
+* 默认情况下,所有的io都是阻塞的
+* 在应用程序中运行到在内核中运行并返回到应用程序有一个切换。
+![blockingio](image/blockingi-o.png)
+### 非阻塞 I/O
+* 当我们将套接字设置为非阻塞时，我们告诉内核，如果我发出的 I/O 请求会使进程休眠，则返回错误而不是阻塞进程（让进程休眠）。
+![blockingio](image/non+blocking+io.png)
+* 这种方法称为轮询。它通常会浪费 CPU 时间，但有时会在专用于一种功能的系统上使用。
+### I/O 多路复用
+![blockingio](image/iomultiplexing.png)
+### 信号驱动 I/O
+* 信号可以告诉内核在描述符准备好时用 SIGIO 信号通知用户进程。
+
+![blockingio](image/signaldriven.png)
+### 异步 I/O
+
+
 ## PPC
 
 
@@ -48,7 +71,78 @@ int main()
 2.当连接上数据就绪的时候进程又会被唤醒，又是一次进程切换
 3.一个进程同时只能等待一条连接，如果有很多并发，则需要很多进程
 
-## 
+## 例子
+```
+
+#include	"unp.h"
+
+int
+main(int argc, char **argv)
+{
+	int					sockfd, n;
+	char				recvline[MAXLINE + 1];
+	struct sockaddr_in	servaddr;
+
+	if (argc != 2)
+		err_quit("usage: a.out <IPaddress>");
+
+	if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+		err_sys("socket error");
+
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port   = htons(13);	/* daytime server */
+	if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0)
+		err_quit("inet_pton error for %s", argv[1]);
+
+	if (connect(sockfd, (SA *) &servaddr, sizeof(servaddr)) < 0)
+		err_sys("connect error");
+
+	while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
+		recvline[n] = 0;	/* null terminate */
+		if (fputs(recvline, stdout) == EOF)
+			err_sys("fputs error");
+	}
+	if (n < 0)
+		err_sys("read error");
+
+	exit(0);
+}
+
+``` 
+
+
+### select
+```
+#include <sys/select.h>
+
+int select (int nfds, fd_set *readfds, fd_set *writefds,
+            fd_set *exceptfds, struct timeval *timeout);
+```
+
+### poll
+```
+#include <poll.h>
+
+struct pollfd {
+    int   fd;         /* file descriptor */
+    short events;     /* requested events */
+    short revents;    /* returned events */
+};         
+
+int poll (struct pollfd *fds, nfds_t nfds, int timeout);
+
+#define _GNU_SOURCE         
+#include <signal.h>
+#include <poll.h>
+
+int ppoll (struct pollfd *fds, nfds_t nfds,
+           const struct timespec *tmo_p, const sigset_t *sigmask);
+```
+### epoll
+
+```
+```
 
 
 ## 问题
@@ -56,59 +150,48 @@ int main()
    1. 这三种模型都可以用来实现 I/O 多路复用，即同时监听多个文件描述符，以确定是否有数据可读写。它们都是基于事件驱动的编程模型，能够提高程序的并发性和性能。
 
 下面简要介绍一下这三种模型的特点：
-select：是最古老的一种 I/O 多路复用模型，也是最常用的一种。它使用 fd_set 类型的数据结构来管理文件描述符集合，可以同时监听多个文件描述符的可读可写事件。但是，由于它使用的数据结构有一定的限制，每次调用 select 函数时需要重新初始化 fd_set 结构体，导致效率不够高。
-poll：是对 select 模型的改进，使用一个数组来管理文件描述符，可以同时监听更多的文件描述符。poll 的另一个优点是支持 edge-triggered 和 level-triggered 两种事件触发方式。但是，当文件描述符数量较大时，效率也不高。
-epoll：是最新的一种 I/O 多路复用模型，是在 Linux 内核 2.6 版本中引入的。它使用红黑树和双向链表来管理文件描述符，可以同时监听大量文件描述符的可读可写事件，并且效率非常高。
-epoll 也支持 edge-triggered 和 level-triggered 两种事件触发方式。因此，epoll 是目前最常用的一种 I/O 多路复用模型。
+* select：是最古老的一种 I/O 多路复用模型，也是最常用的一种。它使用 fd_set 类型的数据结构来管理文件描述符集合，可以同时监听多个文件描述符的可读可写事件。但是，由于它使用的数据结构有一定的限制，每次调用 select 函数时需要重新初始化 fd_set 结构体，导致效率不够高。
+* poll：是对 select 模型的改进，使用一个数组来管理文件描述符，可以同时监听更多的文件描述符。poll 的另一个优点是支持 edge-triggered 和 level-triggered 两种事件触发方式。但是，当文件描述符数量较大时，效率也不高。
+* epoll：是最新的一种 I/O 多路复用模型，是在 Linux 内核 2.6 版本中引入的。它使用红黑树和双向链表来管理文件描述符，可以同时监听大量文件描述符的可读可写事件，并且效率非常高。
+epoll 也支持 edge-triggered 和 level-triggered 两种事件触发方式。
+因此，epoll 是目前最常用的一种 I/O 多路复用模型。
 
 2. 他们之间的有什么关系，各自优缺点
 3. redis、nginx为什么采用epoll
 
 
+当涉及到 Linux 网络编程时，IO多路复用是一个非常重要的主题。它可以帮助我们更好地管理多个网络连接，同时减少资源消耗和提高程序性能。以下是一个更详细的关于IO多路复用的讲解：
 
+I. IO多路复用简介
+A. 什么是IO多路复用？
+* IO多路复用（I/O multiplexing）是一种高效的I/O模型，通常用于在单个线程中管理多个I/O通道。它允许同时监视多个套接字，等待任何一个套接字准备好进行读写操作，从而减少了线程（或进程）数量，提高了系统性能和并发处理能力。
+B. 为什么需要IO多路复用？
+* IO多路复用的主要目的是为了提高系统的并发处理能力和效率，避免开启大量线程或进程来处理多个I/O操作的情况，从而降低系统的资源消耗和管理成本。通过IO多路复用，可以同时监视多个I/O通道的状态，一旦有就绪的I/O数据可读或可写，就立即进行相应的操作，提高了系统对于I/O数据的处理效率。此外，IO多路复用还可以支持非阻塞I/O操作，从而避免了长时间等待I/O完成的情况，提高了系统的响应速度和可靠性。
+C. IO多路复用与传统的阻塞/非阻塞IO模型的对比
 
-I. 引言
+II. select函数
+A. select函数的概述
+B. select函数的使用方法和示例
+C. select函数的局限性和缺点
 
-简要介绍IO多路复用的背景和概念
-引出本次分享的主题
-II. IO多路复用的基本概念
+III. poll函数
+A. poll函数的概述
+B. poll函数的使用方法和示例
+C. poll函数的优点和缺点
 
-什么是IO多路复用
-为什么需要IO多路复用
-IO多路复用的实现方式
-III. IO多路复用的应用场景
+IV. epoll函数
+A. epoll函数的概述
+B. epoll函数的使用方法和示例
+C. epoll函数的优点和缺点
 
-高并发网络编程
-服务器负载均衡
-实时数据传输
-IV. IO多路复用的实现原理
+V. IO多路复用的实际应用
+A. 并发服务器的实现
+B. 客户端/服务器程序中的IO多路复用
+C. IO多路复用的性能优化和调优
 
-select函数的使用
-poll函数的使用
-epoll函数的使用
-V. IO多路复用与其他IO模型的比较
+VI. 总结
+A. IO多路复用的优势和适用场景
+B. IO多路复用的缺点和不足
+C. IO多路复用的未来发展趋势
 
-阻塞IO模型
-非阻塞IO模型
-异步IO模型
-VI. IO多路复用的优缺点
-
-优点：提高系统效率，降低资源开销
-缺点：代码实现较为复杂，对于应用程序的要求较高
-VII. 示例分析
-
-以一个实例演示IO多路复用的具体实现过程
-VIII. 注意事项
-
-避免陷入IO多路复用的误区
-注意IO事件的处理顺序
-注意IO事件的注册和注销
-IX. 总结
-
-简要总结IO多路复用的基本概念、应用场景、实现原理和优缺点
-强调要注意的事项
-鼓励大家在实际开发中灵活运用IO多路复用技术
-X. 结束语
-
-感谢大家的聆听和参与
-鼓励大家在技术领域中不断探索和尝试，共同进步
+IO多路复用是网络编程中的重要主题，可以帮助我们更好地管理网络连接，提高程序性能和资源利用率。掌握IO多路复用的概念和使用方法，有助于我们开发高效、可靠的网络应用程序。
