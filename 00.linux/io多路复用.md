@@ -1,17 +1,20 @@
-## 产生的背景
+## 背景
 如果我们自己去设计一个服务端程序，是不是客户端请求，服务端拿到请求后，然后解析数据，业务处理，返回数据
 如果客户端很少，那么我们服务端，一个一个处理可以
 如果是多个客户端，那我们可以给每个客户端分配一个线程处理每个请求的
 再或者，我们初始化一个线程池，去处理每个客户端的请求
 
+* 进程是无法直接操作I/O设备的，其必须通过系统调用请求内核来协助完成I/O动作，而内核会为每个I/O设备维护一个buffer。
 
-## 5中IO模型
+
+## IO模型
 * 任何输入操作都有两个阶段 
   * 等待数据准备好
   * 将数据从内核复制到进程
 
 ### 阻塞 I/O
 * 默认情况下,所有的io都是阻塞的
+* 应用程序会被阻塞，找到数据复制到应用进程缓存区中才返回
 * 在应用程序中运行到在内核中运行并返回到应用程序有一个切换。
 ![blockingio](image/blockingi-o.png)
 ### 非阻塞 I/O
@@ -25,7 +28,7 @@
 
 ![blockingio](image/signaldriven.png)
 ### 异步 I/O
-
+![blockingio](image/aio.png)
 
 ## PPC
 
@@ -120,6 +123,9 @@ int select (int nfds, fd_set *readfds, fd_set *writefds,
             fd_set *exceptfds, struct timeval *timeout);
 ```
 
+select使用固定长度的bitsmap，表示文件描述符集合，而且所支持的文件描述符的个数是有限的
+
+
 ### poll
 ```
 #include <poll.h>
@@ -139,10 +145,29 @@ int poll (struct pollfd *fds, nfds_t nfds, int timeout);
 int ppoll (struct pollfd *fds, nfds_t nfds,
            const struct timespec *tmo_p, const sigset_t *sigmask);
 ```
+
+poll和select没太大的区别，
+poll不使用了bitsmap保存文件描述符，采用链表的方式存储文件描述符
+
 ### epoll
 
 ```
 ```
+
+1. 先用epoll_create创建一个epoll的epfd
+2. 通过epoll_ctl将需要监视的socket添加epfd，最后调用epoll_wait等待数据
+   
+epoll通过两个方面，很好的解决了select poll的问题
+1. epoll在内核里使用红黑树跟踪进程所有待检测的文件描述符
+2. epoll采用事件驱动的机制，内核里维护一个链表来记录就绪时间，让某个socket有事件发生时，通过回调函数内核会将其加入到这个就绪事件列表中，当用户调用epll_wait函数时，只会返回有事件发生了文件描述符的个数，不需要像select和poll那样轮询扫描整个socket集合，大大提高了检测的效率
+
+
+epoll支持两种事件触发模式，边缘触发  水平触发
+* 边缘触发
+> 使用边缘触发模式时，当被监控的 Socket 描述符上有可读事件发生时，服务器端只会从 epoll_wait 中苏醒一次，即使进程没有调用 read 函数从内核读取数据，也依然只苏醒一次，因此我们程序要保证一次性将内核缓冲区的数据读取完；
+* 水平触发
+> 使用水平触发模式时，当被监控的 Socket 上有可读事件发生时，服务器端不断地从 epoll_wait 中苏醒，直到内核缓冲区数据被 read 函数读完才结束，目的是告诉我们有数据需要读取；
+
 
 
 ## 问题
