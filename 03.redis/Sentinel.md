@@ -21,3 +21,15 @@ Sentinel 也提供了其他附带任务，如监控、通知和充当配置为�
 ## 其他
 Sentinel本质上就是一个运行在特殊模式下的Redis服务器
 和普通服务器不同的是，sentinel不使用数据库，所以初始化时不会载入RDB文件或者AOF文件
+
+
+
+## 选举
+### 哨兵leader选举
+
+### raft选举
+分布式系统中实现多节点达成一致性的算法，可以用来在多个节点中选举出 Leader 节点
+
+角色:
+ leader follower  candidate
+ 
