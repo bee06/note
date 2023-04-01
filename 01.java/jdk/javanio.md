@@ -1,9 +1,10 @@
 ## 定义
-《Scalable IO in Java》 是Doug Lea关于分析与构建可伸缩的高性能IO服务的经典文章
+《Scalable IO in Java》 是Doug Lea关于分析与构建可伸缩的高性能IO服务的经典文章。
+原文地址: https://gee.cs.oswego.edu/dl/cpjslides/nio.pdf
 ## 目录
 * 可扩展的网络服务 
-* "事件驱动处理" 
-* 反应器模式 
+* 事件驱动处理
+* 反应堆模式 
   * 基本版本 
   * 多线程版本 
   * 其他变体 
