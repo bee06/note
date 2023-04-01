@@ -1,5 +1,5 @@
 ## 定义
-
+《Scalable IO in Java》 是Doug Lea关于分析与构建可伸缩的高性能IO服务的经典文章
 ## 目录
 * 可扩展的网络服务 
 * "事件驱动处理" 
@@ -270,4 +270,94 @@ class Handler {
 * 最好的方法是先将所有输入读入缓冲区
 * “使用线程池以进行调整和控制
 * 通常需要的线程比客户端少得多
+
+### 使用线程池处理
+```
+class Handler implements Runnable {
+    // uses util.concurrent thread pool
+    static PooledExecutor pool = new PooledExecutor(...);
+    static final int PROCESSING = 3;
+    // ...
+    synchronized void read() { // ...
+        socket.read(input);
+        if (inputIsComplete()) {
+            state = PROCESSING;
+            pool.execute(new Processer());
+        }
+    }
+    synchronized void processAndHandOff() {
+        process();
+        state = SENDING; // or rebind attachment
+        sk.interest(SelectionKey.OP_WRITE);
+    }
+    class Processer implements Runnable {
+        public void run() { processAndHandOff(); }
+    }
+}
+```
+
+### 协调任务
+* 转移
+  * 每个任务都会启用、触发或调用下一个任务,通常是最快的，但可能不够稳定
+* 回调到每个处理程序分发器
+  * 设置状态
+* 队列
+  * 例如，在不同阶段之间传递缓冲区
+* Futures
+
+### 使用 PooledExecutor
+* 可调节的工作线程池
+* 主方法执行(Runnable r)
+* 控制项：
+  * 任务队列类型
+  * 最大线程数
+  * 最小线程数
+  * 按需分配线程
+  * 保持活动状态的时间间隔，直到空闲线程死亡
+  * 饱和度策略
+  
+### 多个反应器线程
+
+* 使用反应堆池
+  * 用于匹配CPU和IO速率
+  * 静态或动态构造
+    * 每个都有自己的选择器、线程和调度循环
+    * 主接受器分配给其他反应器
+
+    ```
+    Selector[] selectors;
+    int next = 0;
+    class Acceptor {
+        // ...
+        public synchronized void run() {
+            // ...
+            Socket connection = serverSocket.accept();
+            if (connection != null)
+                new Handler(selectors[next], connection);
+            if (++next == selectors.length)
+                next = 0;
+        }
+    }
+    ```
+### 使用其他的java.nio功能
+* 每个反应器多个选择器
+  * 将不同的处理程序绑定到不同的IO事件可能需要仔细协调以进行同步。
+* 文件传输
+  * 自动文件到网络或网络到文件的复制
+* 内存映射文件
+  * 通过缓冲区访问文件
+* 直接缓冲区
+  
+### 基于连接的扩展
+* 不是单一的服务请求
+  * 客户端连接
+  * 客户端发送一系列消息/请求
+  * 客户端断开连接
+* 范例
+  * 数据库和事务监控器
+  * 多参与者游戏、聊天等
+* 可以扩展基本网络服务模式
+  * 处理许多相对长期的客户端
+  * 跟踪客户端和会话状态（包括掉线）
+  * 将服务分布在多个主机上
 
