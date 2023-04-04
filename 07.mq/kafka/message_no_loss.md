@@ -1,22 +1,18 @@
 # 面试题:kafka如何保证消息不丢失
 ## 分析
-我们先分析下面试官问这道题，主要是考你什么？想考察你哪些能力
+Kafka 的整个架构非常简洁，主要由 Producer、Broker、Consumer 三部分组成，后面剖析丢失场景会从这三部分入手来剖析。
 
-kafka发送消息一共会经历三个阶段:
+ ![02-kafka-cluster-body.webp](image/02-kafka-cluster-body.webp)
 
-1. 发送者---broker
-2. broker--- 消费者
 
-## 回答
-
-### 准备
+## 准备
 
 * 已提交的信息
   * 当kafka的若干个broker成功接收到一个消息并写入到日志文件后，它们会告诉生产者程序这条消息已成功提交，此时这条消息变成“已提交”的消息
 
 * 有限度的持久化保证
   * kafka不可能保证在任何情况下都做到不丢失消息， 
-### 发送者
+## 发送者
 * 三种方式方式:
   * fire and forget（即发即弃生产者）
     * producer.send(msg),发送后忘记是最简单的方法。在这个方法中，我们向 broker 发送一条消息，并不关心它是否被成功接收
@@ -25,10 +21,8 @@ kafka发送消息一共会经历三个阶段:
     try {
             RecordMetadata metadata = producer.send(record).get();
             System.out.println("Message is sent to Partition no " + metadata.partition() + " and offset " + metadata.offset());
-            System.out.println("SynchronousProducer Completed with success.");
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("SynchronousProducer failed with an exception");
         } finally {
             producer.close();
         }
@@ -36,6 +30,7 @@ kafka发送消息一共会经历三个阶段:
     * 在这种方法中，我们发送消息并等待直到我们得到响应。在成功的情况下，我们得到一个 RecordMetadata 对象，在失败的情况下，我们得到一个异常。大多数时候，我们不关心我们收到的成功和 RecordMetadata。我们只关心异常，因为我们想记录错误以供以后分析和采取适当的措施。如果您的消息很重要并且您不能丢失任何东西，则可以采用此方法。
     * 但重要的是要注意同步方法会减慢你的速度。它会限制您的吞吐量，因为您正在等待每条消息得到确认。您正在发送一条消息并等待成功，然后您发送下一条消息并再次等待成功。每条消息都需要一些时间才能通过网络传递。因此，在每条消息之后，您都会等待网络延迟，最有趣的是，如果成功，您可能什么都不做。你只关心失败，如果失败了，你可能想采取一些行动。
   * 异步回调
+  
     ```
     public class AsynchronousProducer {
 
@@ -70,8 +65,9 @@ class MyProducerCallback implements Callback {
     }
 }
     ```
-    * 异步生产者的代码再次与发送后忘记方法相同。唯一的区别是发送方法有第二个参数。第二个参数是回调对象。
-    * 在这种方法中，您可以在不等待响应的情况下尽可能快地发送消息，并在故障出现后使用回调函数对其进行处理。
+
+* 异步生产者的代码再次与发送后忘记方法相同。唯一的区别是发送方法有第二个参数。第二个参数是回调对象。
+* 在这种方法中，您可以在不等待响应的情况下尽可能快地发送消息，并在故障出现后使用回调函数对其进行处理。
 * Producer 永远要使用带有回调通知的发送 API，也就是说不要使用 producer.send(msg)，而要使用 producer.send(msg, callback)
 
 
@@ -98,7 +94,8 @@ properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
 
 
 
-### broker
+## broker
+Broker 集群接收到数据后会将数据进行持久化存储到磁盘，为了提高吞吐量和性能，采用的是「异步批量刷盘的策略」，也就是说按照一定的消息量和间隔时间进行刷盘
 
 * 设置 unclean.leader.election.enable = false。
   * 这个参数表示是否允许那些没有在ISR（in-sync-replicas）的broker有资格竞选分区leader。默认值为false，建议最好不要主动设置为true。因为如果没有在ISR集合中的副本，可能有些broker副本数据已经落后原先的leader太多了，一旦它成为新的leader副本，那必然出现消息的丢失。
@@ -112,9 +109,10 @@ properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
 * 确保 replication.factor > min.insync.replicas。
   * 如果两者相等，那么只要有一个副本挂机，整个分区就无法正常工作了。我们不仅要改善消息的持久性，防止数据丢失，还要在不降低可用性的基础上完成。推荐设置成 replication.factor = min.insync.replicas + 1。
 
-### 消费端
-
+## 消费端
 * 消费者通过先消费消息再提交位移的数据给服务端做记录，这样即便消费者宕机，只要恢复后又能从正确的位置拉去数据进行消费，不至于造成消息丢失
-* 确保消息消费完成再提交。Consumer 端有个参数 enable.auto.commit，最好把它设置成 false，并采用手动提交位移的方式。就像前面说的，这对于单 Consumer 多线程处理的场景而言是至关重要的。
+
 
 ![Consumer](image/Consumer.png)
+
+* 确保消息消费完成再提交。Consumer 端有个参数 enable.auto.commit，最好把它设置成 false，并采用手动提交位移的方式。就像前面说的，这对于单 Consumer 多线程处理的场景而言是至关重要的。
