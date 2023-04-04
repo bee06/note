@@ -73,29 +73,47 @@ class MyProducerCallback implements Callback {
     ```
     * 异步生产者的代码再次与发送后忘记方法相同。唯一的区别是发送方法有第二个参数。第二个参数是回调对象。
     * 在这种方法中，您可以在不等待响应的情况下尽可能快地发送消息，并在故障出现后使用回调函数对其进行处理。
+* Producer 永远要使用带有回调通知的发送 API，也就是说不要使用 producer.send(msg)，而要使用 producer.send(msg, callback)
 
-
-Producer 永远要使用带有回调通知的发送 API，也就是说不要使用 producer.send(msg)，而要使用 producer.send(msg, callback)
-
-### broker
 
 * 设置 acks = all。acks 是 Producer 的一个参数，代表了你对“已提交”消息的定义。如果设置成 all，则表明所有副本 Broker 都要接收到消息，该消息才算是“已提交”。这是最高等级的“已提交”定义。
+  
+```
+  
+properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
+properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5"); // kafka 2.0 >= 1.1 so we can keep this as 5. Use 1 otherwise.
+```
+
   * 生产者可以选择接收数据写入的确认：
     * acks=0：生产者不等待确认（可能会丢失数据）
     * acks=1：生产者等待领导者确认（有限的数据丢失）<– 默认选项
     * acks=all：领导者+副本确认（无数据丢失）
    
-* 设置 retries 为一个较大的值。(Producer 的参数)，对应前面提到的 Producer 自动重试。当出现网络的瞬时抖动时，消息发送可能会失败，此时配置了 retries > 0 的 Producer 能够自动重试消息发送，避免消息丢失,另外注意，如果设置了retries参数，则建议设置max.in.flight.requests.per.connection=1，不然可能无法保证同一个分区的消息有序性。
-  
+
+* 当生产者向代理发送消息时，代理可以返回成功或错误代码。这些错误代码属于两类。
+    * 可重试的错误。重试后可以解决的错误。例如，如果代理返回异常 NotEnoughReplicasException ，生产者可以尝试再次发送消息——也许代理代理会重新上线并且第二次尝试会成功
+    * 不可重试的错误。无法解决的错误。例如，如果代理返回 INVALID_CONFIG 异常，再次尝试相同的生产者请求将不会改变请求的结果。
+    * 
+    * 设置 retries 为一个较大的值。(Producer 的参数)，对应前面提到的 Producer 自动重试。
+      * 当出现网络的瞬时抖动时，消息发送可能会失败，此时配置了 retries > 0 的 Producer 能够自动重试消息发送，避免消息丢失,另外注意，如果设置了retries参数，则建议设置max.in.flight.requests.per.connection=1，不然可能无法保证同一个分区的消息有序性。  
+
+
+
+### broker
+
+
 * 设置 unclean.leader.election.enable = false。
-  * 这是 Broker 端的参数，这个参数表示是否允许那些没有在ISR（in-sync-replicas）的broker有资格竞选分区leader。默认值为false，建议最好不要主动设置为true。因为如果没有在ISR集合中的副本，可能有些broker副本数据已经落后原先的leader太多了，一旦它成为新的leader副本，那必然出现消息的丢失。
+  * 这个参数表示是否允许那些没有在ISR（in-sync-replicas）的broker有资格竞选分区leader。默认值为false，建议最好不要主动设置为true。因为如果没有在ISR集合中的副本，可能有些broker副本数据已经落后原先的leader太多了，一旦它成为新的leader副本，那必然出现消息的丢失。
 * 
-* 设置 replication.factor >= 3。这也是 Broker 端的参数。其实这里想表述的是，最好将消息多保存几份，毕竟目前防止消息丢失的主要机制就是冗余。
+* 设置 replication.factor >= 3。其实这里想表述的是，最好将消息多保存几份，毕竟目前防止消息丢失的主要机制就是冗余。
   
 * 设置 min.insync.replicas(最小同步副本) > 1。
-  * 这依然是 Broker 端参数，控制的是消息至少要被写入到多少个副本才算是“已提交”。设置成大于 1 可以提升消息持久性。在实际环境中千万不要使用默认值 1。
+  * 控制的是消息至少要被写入到多少个副本才算是“已提交”。设置成大于 1 可以提升消息持久性。在实际环境中千万不要使用默认值 1。
 * 
-* 确保 replication.factor > min.insync.replicas。如果两者相等，那么只要有一个副本挂机，整个分区就无法正常工作了。我们不仅要改善消息的持久性，防止数据丢失，还要在不降低可用性的基础上完成。推荐设置成 replication.factor = min.insync.replicas + 1。
+* 确保 replication.factor > min.insync.replicas。
+  * 如果两者相等，那么只要有一个副本挂机，整个分区就无法正常工作了。我们不仅要改善消息的持久性，防止数据丢失，还要在不降低可用性的基础上完成。推荐设置成 replication.factor = min.insync.replicas + 1。
 
 ### 消费端
 
