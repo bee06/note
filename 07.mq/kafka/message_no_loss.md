@@ -78,11 +78,11 @@ properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
 ```
 
   * 生产者可以选择接收数据写入的确认：
-    * acks=0：生产者不等待确认（可能会丢失数据）
+    * acks=0：生产者发送消息后不需要等待任何服务端的响应（可能会丢失数据）
     ![Acks](image/Acks0.webp)
-    * acks=1：生产者等待领导者确认（有限的数据丢失）<– 默认选项
+    * acks=1：只有分区的leader的副本成功写入消息，就会收到来自服务端的成功响应
     ![Acks](image/Acks1.webp)
-    * acks=all：领导者+副本确认（无数据丢失）
+    * acks=all：需要等待isr中的所有副本都成功写入消息之后才能够收到来自服务端的成功响应（无数据丢失）
     ![Acks](image/Acks2.webp)
 
 * 当生产者向代理发送消息时，代理可以返回成功或错误代码。这些错误代码属于两类。
@@ -90,7 +90,8 @@ properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
     * 不可重试的错误。无法解决的错误。例如，如果代理返回 INVALID_CONFIG 异常，再次尝试相同的生产者请求将不会改变请求的结果。
     * 
     * 设置 retries 为一个较大的值。(Producer 的参数)，对应前面提到的 Producer 自动重试。
-      * 当出现网络的瞬时抖动时，消息发送可能会失败，此时配置了 retries > 0 的 Producer 能够自动重试消息发送，避免消息丢失,另外注意，如果设置了retries参数，则建议设置max.in.flight.requests.per.connection=1，不然可能无法保证同一个分区的消息有序性。  
+      * 当出现网络的瞬时抖动时，消息发送可能会失败，此时配置了 retries > 0 的 Producer 能够自动重试消息发送，避免消息丢失,另外注意，如果设置了retries参数，则建议设置max.in.flight.requests.per.connection=1，不然可能无法保证同一个分区的消息有序性。
+    * 重试还和另一个参数retry.backoff.ms有关，这个参数的默认值为100，用来设定两次重试时间的间隔时间，避免无效的频繁重试。  
 
 
 
