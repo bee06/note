@@ -33,7 +33,6 @@ kafka发送消息一共会经历三个阶段:
             producer.close();
         }
     ```
-    * send(record).get()
     * 在这种方法中，我们发送消息并等待直到我们得到响应。在成功的情况下，我们得到一个 RecordMetadata 对象，在失败的情况下，我们得到一个异常。大多数时候，我们不关心我们收到的成功和 RecordMetadata。我们只关心异常，因为我们想记录错误以供以后分析和采取适当的措施。如果您的消息很重要并且您不能丢失任何东西，则可以采用此方法。
     * 但重要的是要注意同步方法会减慢你的速度。它会限制您的吞吐量，因为您正在等待每条消息得到确认。您正在发送一条消息并等待成功，然后您发送下一条消息并再次等待成功。每条消息都需要一些时间才能通过网络传递。因此，在每条消息之后，您都会等待网络延迟，最有趣的是，如果成功，您可能什么都不做。你只关心失败，如果失败了，你可能想采取一些行动。
   * 异步回调
@@ -101,11 +100,11 @@ properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
 
 ### broker
 
-
 * 设置 unclean.leader.election.enable = false。
   * 这个参数表示是否允许那些没有在ISR（in-sync-replicas）的broker有资格竞选分区leader。默认值为false，建议最好不要主动设置为true。因为如果没有在ISR集合中的副本，可能有些broker副本数据已经落后原先的leader太多了，一旦它成为新的leader副本，那必然出现消息的丢失。
 * 
-* 设置 replication.factor >= 3。其实这里想表述的是，最好将消息多保存几份，毕竟目前防止消息丢失的主要机制就是冗余。
+* 设置 replication.factor >= 3。
+  * 其实这里想表述的是，最好将消息多保存几份，毕竟目前防止消息丢失的主要机制就是冗余。
   
 * 设置 min.insync.replicas(最小同步副本) > 1。
   * 控制的是消息至少要被写入到多少个副本才算是“已提交”。设置成大于 1 可以提升消息持久性。在实际环境中千万不要使用默认值 1。
@@ -118,4 +117,4 @@ properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
 * 消费者通过先消费消息再提交位移的数据给服务端做记录，这样即便消费者宕机，只要恢复后又能从正确的位置拉去数据进行消费，不至于造成消息丢失
 * 确保消息消费完成再提交。Consumer 端有个参数 enable.auto.commit，最好把它设置成 false，并采用手动提交位移的方式。就像前面说的，这对于单 Consumer 多线程处理的场景而言是至关重要的。
 
- 
+![Consumer](image/Consumer.png)
