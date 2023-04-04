@@ -79,18 +79,16 @@ class MyProducerCallback implements Callback {
 * 设置 acks = all。acks 是 Producer 的一个参数，代表了你对“已提交”消息的定义。如果设置成 all，则表明所有副本 Broker 都要接收到消息，该消息才算是“已提交”。这是最高等级的“已提交”定义。
   
 ```
-  
-properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
 properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
-properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
-properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5"); // kafka 2.0 >= 1.1 so we can keep this as 5. Use 1 otherwise.
 ```
 
   * 生产者可以选择接收数据写入的确认：
     * acks=0：生产者不等待确认（可能会丢失数据）
+    ![Acks](image/Acks0.webp)
     * acks=1：生产者等待领导者确认（有限的数据丢失）<– 默认选项
+    ![Acks](image/Acks1.webp)
     * acks=all：领导者+副本确认（无数据丢失）
-   
+    ![Acks](image/Acks2.webp)
 
 * 当生产者向代理发送消息时，代理可以返回成功或错误代码。这些错误代码属于两类。
     * 可重试的错误。重试后可以解决的错误。例如，如果代理返回异常 NotEnoughReplicasException ，生产者可以尝试再次发送消息——也许代理代理会重新上线并且第二次尝试会成功
