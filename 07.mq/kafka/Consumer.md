@@ -22,6 +22,9 @@
   * 缺点
     * Rebalance 过程对 Consumer Group 消费过程有极大的影响,在 Rebalance 过程中，所有 Consumer 实例都会停止消费，等待 Rebalance 完成
     * 其次，目前 Rebalance 的设计是所有 Consumer 实例共同参与，全部重新分配所有分区
+  * 如何避免
+    * 所谓协调者，在 Kafka 中对应的术语是 Coordinator，它专门为 Consumer Group 服务，负责为 Group 执行 Rebalance 以及提供位移管理和组成员管理等
+    * Consumer 端应用程序在提交位移时，其实是向 Coordinator 所在的 Broker 提交位移。同样地，当 Consumer 应用启动时，也是向 Coordinator 所在的 Broker 发送各种请求，然后由 Coordinator 负责执行消费者组的注册、成员管理记录等元数据管理操作。
 ## 神秘的位移
 ### 定义
 * kafka内部神秘的主题:__consumer_offsets
