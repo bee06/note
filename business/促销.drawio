@@ -1,0 +1,34 @@
+<mxfile host="Electron" modified="2023-04-05T08:13:30.500Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.1.2 Chrome/106.0.5249.199 Electron/21.4.3 Safari/537.36" etag="8xYZezEa5mYf0qWfiGG6" version="21.1.2" type="device">
+  <diagram name="第 1 页" id="cjzxclNcPU2xtW72lW7d">
+    <mxGraphModel dx="954" dy="674" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-2" value="可视化配置" style="swimlane;startSize=20;horizontal=1;containerType=tree;rounded=1;glass=0;shadow=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="250" width="650" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-6" value="促销活动规则" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1G4GsLbxePyv2_AHrJOM-2">
+          <mxGeometry x="30" y="50" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-7" value="共享互斥规则" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1G4GsLbxePyv2_AHrJOM-2">
+          <mxGeometry x="30" y="130" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-8" value="优先级" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1G4GsLbxePyv2_AHrJOM-2">
+          <mxGeometry x="30" y="220" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-9" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;" vertex="1" parent="1G4GsLbxePyv2_AHrJOM-2">
+          <mxGeometry x="200" y="80" width="50" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1G4GsLbxePyv2_AHrJOM-2" source="1G4GsLbxePyv2_AHrJOM-13" target="1G4GsLbxePyv2_AHrJOM-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-13" value="转换" style="label;whiteSpace=wrap;html=1;align=center;verticalAlign=bottom;spacingLeft=0;spacingBottom=4;imageAlign=center;imageVerticalAlign=top;image=img/clipart/Gear_128x128.png" vertex="1" parent="1G4GsLbxePyv2_AHrJOM-2">
+          <mxGeometry x="250" y="125" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="1G4GsLbxePyv2_AHrJOM-16" value="DSL" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1G4GsLbxePyv2_AHrJOM-2">
+          <mxGeometry x="470" y="135" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
