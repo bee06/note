@@ -1,0 +1,43 @@
+<mxfile host="Electron" modified="2023-04-07T06:24:09.346Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.1.2 Chrome/106.0.5249.199 Electron/21.4.3 Safari/537.36" etag="6bVxpKfJF9FT1gO_2hm0" version="21.1.2" type="device">
+  <diagram id="yPxyJZ8AM_hMuL3Unpa9" name="gitflow">
+    <mxGraphModel dx="1194" dy="824" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="20" value="消息日志文件" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="800" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="24" value="log段" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="470" y="80" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-179" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="42" target="24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-182" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="42" target="_otTQxSzNb_a0f1aZ751-180">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-183" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="42" target="_otTQxSzNb_a0f1aZ751-181">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="42" value="log&lt;br&gt;" style="text;html=1;strokeColor=#d79b00;fillColor=#ffe6cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="140" y="200" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-180" value="log段" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="470" y="200" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-181" value="log段" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="470" y="310" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-184" value="位移索引文件" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="80" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-185" value="时间戳索引文件" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="160" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_otTQxSzNb_a0f1aZ751-186" value="已中止事务索引文件" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="240" width="200" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
