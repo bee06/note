@@ -15,3 +15,74 @@
     * 随机就是我们随意地将消息放置到任意一个分区上
   * 按消息键保序策略
     * 一旦消息被定义了 Key，那么你就可以保证同一个 Key 的所有消息都进入到相同的分区里面，由于每个分区下的消息处理都是有顺序的，故这个策略被称为按消息键保序策略
+
+
+## 例子
+
+```
+
+public class Producer {
+    private final KafkaProducer<Integer, String> producer;
+  
+    public Producer(final String topic,
+                    final String transactionalId,
+                    final boolean enableIdempotency,
+                    final int transactionTimeoutMs
+                    ) {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaProperties.KAFKA_SERVER_URL + ":" + KafkaProperties.KAFKA_SERVER_PORT);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "DemoProducer");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        if (transactionTimeoutMs > 0) {
+            props.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeoutMs);
+        }
+        if (transactionalId != null) {
+            props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId);
+        }
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, enableIdempotency);
+        producer = new KafkaProducer<>(props);
+    }
+
+
+    private void sendAsync(final int messageKey, final String messageStr, final long currentTimeMs) {
+        this.producer.send(new ProducerRecord<>(topic,
+                        messageKey,
+                        messageStr),
+                new DemoCallBack(currentTimeMs, messageKey, messageStr));
+    }
+
+}
+
+class DemoCallBack implements Callback {
+
+    private final long startTime;
+    private final int key;
+    private final String message;
+
+    public DemoCallBack(long startTime, int key, String message) {
+        this.startTime = startTime;
+        this.key = key;
+        this.message = message;
+    }
+
+    
+    public void onCompletion(RecordMetadata metadata, Exception exception) {
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        if (metadata != null) {
+            System.out.println(
+                "message(" + key + ", " + message + ") sent to partition(" + metadata.partition() +
+                    "), " +
+                    "offset(" + metadata.offset() + ") in " + elapsedTime + " ms");
+        } else {
+            exception.printStackTrace();
+        }
+    }
+}
+
+```
+
+## KafkaProducer的构造方法
+
+```
+```
