@@ -837,7 +837,7 @@ private void doSend(ClientRequest clientRequest, boolean isInternalRequest, long
                                                        builder.oldestAllowedVersion(),
                                                        builder.latestAllowedVersion());
         }
-       
+       // 真正的发送
         doSend(clientRequest, isInternalRequest, now, builder.build(version));
     } catch (UnsupportedVersionException unsupportedVersionException) {
         
@@ -877,28 +877,28 @@ private void doSend(ClientRequest clientRequest, boolean isInternalRequest, long
 
 ```
 /**
- * 将给定的请求排队，以便在后续的{@link poll(long)}调用中发送
+ * 主要实现了 Kafka 客户端的网络请求的排队功能，能够将网络请求加入到发送队列中，等待后续的 poll 方法进行发送
  *
  * @param send The request to send
  */
 public void send(NetworkSend send) {
+    // 获取目标连接的连接 ID
     String connectionId = send.destinationId();
+    //获得 KafkaChannel 对象，
     KafkaChannel channel = openOrClosingChannelOrFail(connectionId);
+    //若连接正在关闭，则将连接 ID 添加到 failedSends 队列中
     if (closingChannels.containsKey(connectionId)) {
-        
         this.failedSends.add(connectionId);
     } else {
         try {
+            //将网络请求交给 KafkaChannel 对象处理
             channel.setSend(send);
         } catch (Exception e) {
-           
+            // 如果 KafkaChannel 对象在处理过程中抛出异常，将连接状态设置为 FAILED_SEND，并将连接 ID 添加到 failedSends 队列中，然后关闭连接，并将异常向上抛出，以便上层代码处理
             channel.state(ChannelState.FAILED_SEND);
-       
             this.failedSends.add(connectionId);
             close(channel, CloseMode.DISCARD_NO_NOTIFY);
             if (!(e instanceof CancelledKeyException)) {
-                log.error("Unexpected exception during send, closing connection {} and rethrowing exception {}",
-                        connectionId, e);
                 throw e;
             }
         }
