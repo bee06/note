@@ -103,6 +103,10 @@ class DemoCallBack implements Callback {
   * KafkaProducer的构造方法
   * producer.send()真正的发送方法
 
+## 架构图
+kafka的生产者采用生产者-消费者模式,在调用producer.send()的时候，并没有真正的发送到kafka的broker服务器上，而是先把消息保存到内存,然后有sender线程去发送到poll,
+主线程产生消息,sender线程是发送消费
+1. 
 
 
 ## KafkaProducer的构造方法
