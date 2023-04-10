@@ -1,38 +1,34 @@
-## 消费者分区
+---
+theme: healer-readable
+highlight: atelier-forest-light
+---
+# 引言
+在 Kafka 中，生产者（Producer）负责将消息发送到 Kafka 集群，是实现高效数据流动的关键组件之一。本文将从源码层面分析 Kafka 生产者的实现细节，帮助读者更好地理解 Kafka 生产者的工作原理和性能特征。
 
-* Kafka 的消息组织方式实际上是三级结构：主题 - 分区 - 消息。
-* 主题下的每条消息只会保存在某一个分区中，而不会在多个分区中被保存多份
-![messages-with-without-keys](messages-with-without-keys.png)
-### 为什么分区要这么设计呢
-* 其实分区的作用就是提供负载均衡的能力，主要目的是为了提高kafka的高伸缩性
+注明:
+> 0.10.2 的 Kafka 中，其 Client 端是由 Java 实现，Server 端是由 Scala 来实现的
 
-### 分区策略
-所谓的分区策略其实就是生产者将消息发送到哪个分区的算法，kafka提供了默认的分区策略，也支持自定的分区策略
+# 能学到什么
+1.  Kafka 生产者是如何实现消息的发送和分发的？
+2.  Kafka 生产者的代码实现中有哪些值得我们注意的细节和技巧？
 
-  * 轮询分区策略
-    * 轮询策略有非常优秀的负载均衡表现，它总是能保证消息最大限度地被平均分配到所有分区上，故默认情况下它是最合理的分区策略，也是我们最常用的分区策略之一。
-  * 随机策略
-    * 随机就是我们随意地将消息放置到任意一个分区上
-  * 按消息键保序策略
-    * 一旦消息被定义了 Key，那么你就可以保证同一个 Key 的所有消息都进入到相同的分区里面，由于每个分区下的消息处理都是有顺序的，故这个策略被称为按消息键保序策略
+#  架构图
 
 
-## 引言
-我们平常使用kafka发消息,那么kafka是怎么发送到broker，生产者内部都做哪些工作？
-有哪些好的设计值得我们借鉴，我们带着这些问题，跟着kafka的生产者源码看看kafka是怎么设计的
+![生产者流程-架构图.png](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/af7a21f274ae4ae2a16bccb275b64d99~tplv-k3u1fbpfcp-watermark.image?)
 
-0.10.2 的 Kafka 中，其 Client 端是由 Java 实现，Server 端是由 Scala 来实现的
+从上图,我们了解到:
+1. kafka的生产者采用生产者-消费者模式,生产者发送消息的过程可以分为两个阶段：
+    * 第一个阶段是将待发送的消息缓存到 RecordAccumulator(记录叠加器)中
+    * 第二个阶段是从 RecordAccumulator 中取出消息进行网络发送。
+2. kafka的生产者其实分为三部分
+    * kafkaProducer主线程
+    * RecordAccumulator
+    * sender线程
+ 
+# 开始分析
 
-## 名词解释
-* Topics 
-* Partitions 
-* Offsets
-* Broker
-* Replication
-* Leader
-* Producers and Consumers 生产者和消费者
-
-## 例子
+## 生产者的例子
 
 ```
 
@@ -99,17 +95,31 @@ class DemoCallBack implements Callback {
 ```
 
 说明:
-* 根据上面的例子，我们重点分析：
+* 上面的例子，最关键的两个地方（尤其是send消息的）:
   * KafkaProducer的构造方法
-  * producer.send()真正的发送方法
-
-## 架构图
-kafka的生产者采用生产者-消费者模式,在调用producer.send()的时候，并没有真正的发送到kafka的broker服务器上，而是先把消息保存到内存,然后有sender线程去发送到poll,
-主线程产生消息,sender线程是发送消费
-1. 
+  * producer.send消息
+  
 
 
-## KafkaProducer的构造方法
+## KafkaProducer的介绍
+
+### 组成部分
+
+![iShot_2023-04-10_17.02.18.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/edd009ec857f4edf886557adcac55036~tplv-k3u1fbpfcp-watermark.image?)
+
+#### 说明
+1.  `producerConfig`: 存储了Kafka Producer的配置信息，包括连接的Kafka集群地址、序列化器、确认机制等参数。
+1.  `metrics`: 存储了生产者的指标数据，例如发送的消息数量、成功发送的消息数量、失败的消息数量等。
+1.  `sender`: 负责将消息发送到Kafka集群的组件。它会将消息转换成Kafka可识别的格式，然后将其发送到指定的分区。
+1.  `recordAccumulator`: 缓存待发送的消息。生产者将消息发送到recordAccumulator后，sender从recordAccumulator中获取消息并发送到Kafka集群。
+1.  `metadata`: 存储了Kafka集群中所有主题和分区的元数据信息，包括分区的leader、ISR（in-sync replicas）列表等。
+1.  `interceptors`: 消息拦截器列表。生产者可以配置多个拦截器，用于在消息发送前、发送后对消息进行处理，例如添加时间戳、打印日志等。
+1.  `bufferMemory`: 缓存待发送消息的总大小。如果recordAccumulator中待发送消息的大小超过了bufferMemory，则生产者将等待sender将消息发送出去，以释放recordAccumulator中的空间。
+1.  `maxBlockMs`: 生产者在发送消息时，如果recordAccumulator已满，会等待sender将消息发送出去。如果sender在指定的时间内无法发送消息，则生产者会抛出异常。maxBlockMs指定了等待sender的最大时间。
+1.  `requestTimeoutMs`: 生产者等待Kafka Broker的响应的最大时间。如果在指定时间内没有收到Broker的响应，则生产者会重试发送消息或抛出异常。
+1.  `transactionManager`: 支持事务的生产者需要配置transactionManager。transactionManager负责管理事务的状态、事务中发送的消息等信息。
+
+### 构造方法
 
 ```
 KafkaProducer(ProducerConfig config,
@@ -127,27 +137,6 @@ KafkaProducer(ProducerConfig config,
             String transactionalId = config.getString(ProducerConfig.TRANSACTIONAL_ID_CONFIG);
             // 客户端id
             this.clientId = config.getString(ProducerConfig.CLIENT_ID_CONFIG);
-
-            // 日志
-            LogContext logContext;
-            if (transactionalId == null)
-                logContext = new LogContext(String.format("[Producer clientId=%s] ", clientId));
-            else
-                logContext = new LogContext(String.format("[Producer clientId=%s, transactionalId=%s] ", clientId, transactionalId));
-            log = logContext.logger(KafkaProducer.class);
-            log.trace("Starting the Kafka producer");
-
-            // 配置生产者监控
-            Map<String, String> metricTags = Collections.singletonMap("client-id", clientId);
-            MetricConfig metricConfig = new MetricConfig().samples(config.getInt(ProducerConfig.METRICS_NUM_SAMPLES_CONFIG))
-                    .timeWindow(config.getLong(ProducerConfig.METRICS_SAMPLE_WINDOW_MS_CONFIG), TimeUnit.MILLISECONDS)
-                    .recordLevel(Sensor.RecordingLevel.forName(config.getString(ProducerConfig.METRICS_RECORDING_LEVEL_CONFIG)))
-                    .tags(metricTags);
-            List<MetricsReporter> reporters = CommonClientConfigs.metricsReporters(clientId, config);
-            MetricsContext metricsContext = new KafkaMetricsContext(JMX_PREFIX,
-                    config.originalsWithPrefix(CommonClientConfigs.METRICS_CONTEXT_PREFIX));
-            this.metrics = new Metrics(metricConfig, reporters, time, metricsContext);
-            this.producerMetrics = new KafkaProducerMetrics(metrics);
 
             // 设置对应的分区器
             this.partitioner = config.getConfiguredInstance(
@@ -182,11 +171,7 @@ KafkaProducer(ProducerConfig config,
                     ProducerConfig.INTERCEPTOR_CLASSES_CONFIG,
                     ProducerInterceptor.class,
                     Collections.singletonMap(ProducerConfig.CLIENT_ID_CONFIG, clientId));
-            if (interceptors != null)
-                this.interceptors = interceptors;
-            else
-                this.interceptors = new ProducerInterceptors<>(interceptorList);
-
+         
             // 集群资源变更监听器
             ClusterResourceListeners clusterResourceListeners = configureClusterResourceListeners(this.keySerializer,
                     this.valueSerializer, interceptorList, reporters);
@@ -269,8 +254,7 @@ KafkaProducer(ProducerConfig config,
     }
 
 ```
-
-说明：
+#### 说明：
 * 配置生产者的监控
 * 设置对应的分区器
 * 配置发送失败的重试时间
@@ -281,118 +265,404 @@ KafkaProducer(ProducerConfig config,
 * 生产端的元信息配置
 * 创建发送器并且启动的IO线程
 
+## KafkaProducer发送消息
 
-## producer#send
+### 说明
+* 生产者发送消息的过程可以分为两个阶段：
+    * 将发送的消息缓存到 RecordAccumulator(记录叠加器)中
+    * RecordAccumulator是如何存储消息的
+    * sender线程取出消息进行网络发送。
+
+### 将消息缓存到记录叠加器
+
+#### 代码
+
+##### send方法
 
 ```
-private Future<RecordMetadata> doSend(ProducerRecord<K, V> record, Callback callback) {
-        // Append回调处理以下内容:
-        //  - 在完成时调用拦截器和用户回调
-        //  - 记住在RecordAccumulator.append中计算的分区
-        AppendCallbacks<K, V> appendCallbacks = new AppendCallbacks<K, V>(callback, this.interceptors, record);
+public Future<RecordMetadata> send(ProducerRecord<K, V> record, Callback callback) {  
+ 
+    ProducerRecord<K, V> interceptedRecord = this.interceptors.onSend(record);  
+    return doSend(interceptedRecord, callback);  
+}
+```
+##### doSend方法
 
+```
+private Future < RecordMetadata > doSend(ProducerRecord < K, V > record, Callback callback) {
+    
+    AppendCallbacks < K, V > appendCallbacks = new AppendCallbacks < K, V > (callback, this.interceptors, record);
+
+    try {
+       
+        long nowMs = time.milliseconds();
+        ClusterAndWaitTime clusterAndWaitTime = waitOnMetadata(record.topic(), record.partition(), nowMs, maxBlockTimeMs);
+        
+        nowMs += clusterAndWaitTime.waitedOnMetadataMs;
+        long remainingWaitMs = Math.max(0, maxBlockTimeMs - clusterAndWaitTime.waitedOnMetadataMs);
+        Cluster cluster = clusterAndWaitTime.cluster;
+        // key和value序列化
+        ....
+        // 计算分区，但注意，在调用之后，它可以是RecordMetadata。UNKNOWN_PARTITION
+        // 这意味着RecordAccumulator将使用内置逻辑(可能会考虑代理负载，每个分区产生的数据量等)选择一个分区.
+        int partition = partition(record, serializedKey, serializedValue, cluster);
+
+        // 将记录追加到累加器
+        RecordAccumulator.RecordAppendResult result = accumulator.append(record.topic(), partition, timestamp, serializedKey,
+            serializedValue, headers, appendCallbacks, remainingWaitMs, abortOnNewBatch, nowMs, cluster);
+       
+        // 在累加器成功追加分区后，将其添加到事务中（如果正在进行）。我们不能在此之前执行此操作，因为该分区可能是未知的，
+        // 或者当批处理关闭时初始选择的分区可能会更改（如“abortForNewBatch”所示）。请注意，“发送方”将拒绝从累加器中出队批次，直到它们被添加到事务中。
+        if (transactionManager != null) {
+            transactionManager.maybeAddPartition(appendCallbacks.topicPartition());
+        }
+        // 如果累加器满了或者新创建的批次
+        if (result.batchIsFull || result.newBatchCreated) {
+            log.trace("Waking up the sender since topic {} partition {} is either full or getting a new batch", record.topic(), appendCallbacks.getPartition());
+            // 唤醒发送器线程
+            this.sender.wakeup();
+        }
+        return result.future;
+        //处理异常并记录错误 对于 API 异常，将它们返回Future，对于其他异常直接抛出
+    } catch (ApiException e) {
+        
+        if (callback != null) {
+            TopicPartition tp = appendCallbacks.topicPartition();
+            RecordMetadata nullMetadata = new RecordMetadata(tp, -1, -1, RecordBatch.NO_TIMESTAMP, -1, -1);
+            callback.onCompletion(nullMetadata, e);
+        }
+        this.errors.record();
+        this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
+        if (transactionManager != null) {
+            transactionManager.maybeTransitionToErrorState(e);
+        }
+        return new FutureFailure(e);
+    } catch (InterruptedException e) {
+        this.errors.record();
+        this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
+        throw new InterruptException(e);
+    } catch (KafkaException e) {
+        this.errors.record();
+        this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
+        throw e;
+    } catch (Exception e) {
+        this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
+        throw e;
+    }
+}
+```
+##### 说明
+![iShot_2023-04-10_17.17.46.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0be7ef57d93c445d9637f4430233196a~tplv-k3u1fbpfcp-watermark.image?)
+
+## RecordAccumulator是如何存储消息的
+
+```
+public RecordAppendResult append(String topic,
+                                     int partition,
+                                     long timestamp,
+                                     byte[] key,
+                                     byte[] value,
+                                     Header[] headers,
+                                     AppendCallbacks callbacks,
+                                     long maxTimeToBlock,
+                                     boolean abortOnNewBatch,
+                                     long nowMs,
+                                     Cluster cluster) throws InterruptedException {
+        // 创建或获取指定主题的 `TopicInfo` 对象，`TopicInfo` 用于跟踪与指定主题相关的信息，如分区信息、分区内的批次
+        TopicInfo topicInfo = topicInfoMap.computeIfAbsent(topic, k -> new TopicInfo(logContext, k, batchSize));
+
+        // 跟踪追加线程的数量，以确保在abortIncompleteBatches()中不会遗漏批次.
+        appendsInProgress.incrementAndGet();
+        ByteBuffer buffer = null;
+        if (headers == null) headers = Record.EMPTY_HEADERS;
         try {
-            throwIfProducerClosed();
-            // first make sure the metadata for the topic is available
-            long nowMs = time.milliseconds();
-            ClusterAndWaitTime clusterAndWaitTime;
-            try {
-                clusterAndWaitTime = waitOnMetadata(record.topic(), record.partition(), nowMs, maxBlockTimeMs);
-            } catch (KafkaException e) {
-                if (metadata.isClosed())
-                    throw new KafkaException("Producer closed while send in progress", e);
-                throw e;
-            }
-            nowMs += clusterAndWaitTime.waitedOnMetadataMs;
-            long remainingWaitMs = Math.max(0, maxBlockTimeMs - clusterAndWaitTime.waitedOnMetadataMs);
-            Cluster cluster = clusterAndWaitTime.cluster;
-            byte[] serializedKey;
-            try {
-                serializedKey = keySerializer.serialize(record.topic(), record.headers(), record.key());
-            } catch (ClassCastException cce) {
-                throw new SerializationException("Can't convert key of class " + record.key().getClass().getName() +
-                        " to class " + producerConfig.getClass(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG).getName() +
-                        " specified in key.serializer", cce);
-            }
-            byte[] serializedValue;
-            try {
-                serializedValue = valueSerializer.serialize(record.topic(), record.headers(), record.value());
-            } catch (ClassCastException cce) {
-                throw new SerializationException("Can't convert value of class " + record.value().getClass().getName() +
-                        " to class " + producerConfig.getClass(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG).getName() +
-                        " specified in value.serializer", cce);
-            }
-
-            // 尝试计算分区，但注意，在调用之后，它可以是RecordMetadata。UNKNOWN_PARTITION
-            // 这意味着RecordAccumulator将使用内置逻辑(可能会考虑代理负载，每个分区产生的数据量等)选择一个分区.
-            int partition = partition(record, serializedKey, serializedValue, cluster);
-
-            setReadOnly(record.headers());
-            Header[] headers = record.headers().toArray();
-
-            int serializedSize = AbstractRecords.estimateSizeInBytesUpperBound(apiVersions.maxUsableProduceMagic(),
-                    compressionType, serializedKey, serializedValue, headers);
-            ensureValidRecordSize(serializedSize);
-            long timestamp = record.timestamp() == null ? nowMs : record.timestamp();
-
-            // 自定义分区器可以利用onNewBatch回调.
-            boolean abortOnNewBatch = partitioner != null;
-
-            // 将记录追加到累加器。注意，实际的分区可以在那里计算，并且可以通过appendCallbacks.topicPartition进行访问.
-            RecordAccumulator.RecordAppendResult result = accumulator.append(record.topic(), partition, timestamp, serializedKey,
-                    serializedValue, headers, appendCallbacks, remainingWaitMs, abortOnNewBatch, nowMs, cluster);
-            assert appendCallbacks.getPartition() != RecordMetadata.UNKNOWN_PARTITION;
-
-            if (result.abortForNewBatch) {
-                int prevPartition = partition;
-                onNewBatch(record.topic(), cluster, prevPartition);
-                partition = partition(record, serializedKey, serializedValue, cluster);
-                if (log.isTraceEnabled()) {
-                    log.trace("Retrying append due to new batch creation for topic {} partition {}. The old partition was {}", record.topic(), partition, prevPartition);
+            // 循环-在遇到分区器的竞态条件时重试.
+            while (true) {
+                // 分区关联
+                final BuiltInPartitioner.StickyPartitionInfo partitionInfo;
+                final int effectivePartition;
+                if (partition == RecordMetadata.UNKNOWN_PARTITION) {
+                    partitionInfo = topicInfo.builtInPartitioner.peekCurrentPartitionInfo(cluster);
+                    effectivePartition = partitionInfo.partition();
+                } else {
+                    partitionInfo = null;
+                    effectivePartition = partition;
                 }
-                result = accumulator.append(record.topic(), partition, timestamp, serializedKey,
-                    serializedValue, headers, appendCallbacks, remainingWaitMs, false, nowMs, cluster);
-            }
 
-            // 在累加器成功追加分区后，将其添加到事务中（如果正在进行）。我们不能在此之前执行此操作，因为该分区可能是未知的，
-            // 或者当批处理关闭时初始选择的分区可能会更改（如“abortForNewBatch”所示）。请注意，“发送方”将拒绝从累加器中出队批次，直到它们被添加到事务中。
-            if (transactionManager != null) {
-                transactionManager.maybeAddPartition(appendCallbacks.topicPartition());
-            }
+                // 现在我们知道了有效分区，让调用者知道.
+                setPartition(callbacks, effectivePartition);
 
-            if (result.batchIsFull || result.newBatchCreated) {
-                log.trace("Waking up the sender since topic {} partition {} is either full or getting a new batch", record.topic(), appendCallbacks.getPartition());
-                this.sender.wakeup();
+                // 检查一下我们是否有正在生产的批次
+                Deque<ProducerBatch> dq = topicInfo.batches.computeIfAbsent(effectivePartition, k -> new ArrayDeque<>());
+                synchronized (dq) {
+                    // 获取锁后，验证分区没有更改，然后重试.
+                    if (partitionChanged(topic, topicInfo, partitionInfo, dq, nowMs, cluster))
+                        continue;
+
+                    RecordAppendResult appendResult = tryAppend(timestamp, key, value, headers, callbacks, dq, nowMs);
+                    if (appendResult != null) {
+                        // 如果队列中有不完整的批.
+                        boolean enableSwitch = allBatchesFull(dq);
+                        topicInfo.builtInPartitioner.updatePartitionInfo(partitionInfo, appendResult.appendedBytes, cluster, enableSwitch);
+                        return appendResult;
+                    }
+                }
+
+                // 我们没有正在进行的记录批处理，请尝试分配一个新批处理
+                if (abortOnNewBatch) {
+                    return new RecordAppendResult(null, false, false, true, 0);
+                }
+
+                if (buffer == null) {
+                    byte maxUsableMagic = apiVersions.maxUsableProduceMagic();
+                    int size = Math.max(this.batchSize, AbstractRecords.estimateSizeInBytesUpperBound(maxUsableMagic, compression, key, value, headers));
+                    log.trace("Allocating a new {} byte message buffer for topic {} partition {} with remaining timeout {}ms", size, topic, partition, maxTimeToBlock);
+                    // 如果耗尽缓冲区空间，重新分配，此调用可能阻塞.
+                    buffer = free.allocate(size, maxTimeToBlock);
+                    nowMs = time.milliseconds();
+                }
+
+                synchronized (dq) {
+                    
+                    if (partitionChanged(topic, topicInfo, partitionInfo, dq, nowMs, cluster))  continue;
+                    // 创建新的批次
+                    RecordAppendResult appendResult = appendNewBatch(topic, effectivePartition, dq, timestamp, key, value, headers, callbacks, buffer, nowMs);
+                    
+                    if (appendResult.newBatchCreated)
+                        buffer = null;
+                 
+                    boolean enableSwitch = allBatchesFull(dq);
+                    topicInfo.builtInPartitioner.updatePartitionInfo(partitionInfo, appendResult.appendedBytes, cluster, enableSwitch);
+                    return appendResult;
+                }
             }
-            return result.future;
-            // 处理异常并记录错误
-            // for API exceptions return them in the future,
-            // for other exceptions throw directly
-        } catch (ApiException e) {
-            log.debug("Exception occurred during message send:", e);
-            if (callback != null) {
-                TopicPartition tp = appendCallbacks.topicPartition();
-                RecordMetadata nullMetadata = new RecordMetadata(tp, -1, -1, RecordBatch.NO_TIMESTAMP, -1, -1);
-                callback.onCompletion(nullMetadata, e);
-            }
-            this.errors.record();
-            this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
-            if (transactionManager != null) {
-                transactionManager.maybeTransitionToErrorState(e);
-            }
-            return new FutureFailure(e);
-        } catch (InterruptedException e) {
-            this.errors.record();
-            this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
-            throw new InterruptException(e);
-        } catch (KafkaException e) {
-            this.errors.record();
-            this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
-            throw e;
-        } catch (Exception e) {
-            // we notify interceptor about all exceptions, since onSend is called before anything else in this method
-            this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
-            throw e;
+        } finally {
+            free.deallocate(buffer);
+            appendsInProgress.decrementAndGet();
         }
     }
+
 ```
+
+### tryAppend
+
+```
+
+public FutureRecordMetadata tryAppend(long timestamp, byte[] key, byte[] value, Header[] headers, Callback callback, long now) {  
+    if (!recordsBuilder.hasRoomFor(timestamp, key, value, headers)) {  
+        return null;  
+    } else {  
+        this.recordsBuilder.append(timestamp, key, value, headers);  
+        this.maxRecordSize = Math.max(this.maxRecordSize, AbstractRecords.estimateSizeInBytesUpperBound(magic(), recordsBuilder.compressionType(), key, value, headers));  
+        this.lastAppendTime = now;  
+        FutureRecordMetadata future = new FutureRecordMetadata(this.produceFuture, this.recordCount,  
+            timestamp,  
+            key == null ? -1 : key.length,  
+            value == null ? -1 : value.length,  
+            Time.SYSTEM);  
+
+        thunks.add(new Thunk(callback, future));  
+        this.recordCount++;  
+        return future;  
+    }  
+}
+
+
+```
+##### 说明
+* 则将消息追加到批次中，并更新批次中最大的消息大小、最后追加消息的时间等信息。
+* 方法会创建一个FutureRecordMetadata对象，表示这条消息的元数据，并将其添加到thunks队列中。
+* thunks队列中保存的是每个用户在添加消息时传入的Callback函数和对应的FutureRecordMetadata对象
+
+### sender线程取出消息进行网络发送
+
+##### 说明
+回忆下在kafkaProducer的构造方法里面会初始化sender线程：
+
+```
+public static final String NETWORK_THREAD_PREFIX = "kafka-producer-network-thread";
+// 创建发送器
+
+this.sender = newSender(logContext, kafkaClient, this.metadata);  
+String ioThreadName = NETWORK_THREAD_PREFIX + " | " + clientId;  
+this.ioThread = new KafkaThread(ioThreadName, this.sender, true);  
+this.ioThread.start();
+```
+* newSender方法其实就是构建一个 Sender对象
+
+#### Sender对象的组成
+
+
+![iShot_2023-04-10_18.07.38.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3d2df43ea0e49bcbf3ce5df004892b3~tplv-k3u1fbpfcp-watermark.image?)
+
+sender类实现了Runnable接口,那么我们直接看run方法
+
+##### Run
+
+```
+public void run() {
+    log.debug("Starting Kafka producer I/O thread.");
+
+    // main loop, runs until close is called
+    while (running) {
+        try {
+            runOnce();
+        } catch (Exception e) {
+            log.error("Uncaught error in Kafka producer I/O thread: ", e);
+        }
+    }
+    ... // 删除其他代码
+    log.debug("Shutdown of Kafka producer I/O thread has completed.");
+}
+
+```
+
+##### runOnce
+
+```
+void runOnce() {
+    if (transactionManager != null) {
+        try {
+            transactionManager.maybeResolveSequences();
+
+            // 如果transaction manager处于失败状态，不再发送消息
+            if (transactionManager.hasFatalError()) {
+                RuntimeException lastError = transactionManager.lastError();
+                if (lastError != null)
+                    maybeAbortBatches(lastError);
+                client.poll(retryBackoffMs, time.milliseconds());
+                return;
+            }
+
+            // 检查是否需要一个新的producerId，如果需要，则发送一个InitProducerId请求
+            transactionManager.bumpIdempotentEpochAndResetIdIfNeeded();
+
+            if (maybeSendAndPollTransactionalRequest()) {
+                return;
+            }
+        } catch (AuthenticationException e) {
+          
+            transactionManager.authenticationFailed(e);
+        }
+    }
+
+    long currentTimeMs = time.milliseconds();
+    long pollTimeout = sendProducerData(currentTimeMs);
+    client.poll(pollTimeout, currentTimeMs);
+}
+
+```
+说明:
+* 这里我们只看 sendProducerData和poll的方法
+
+##### sendProducerData
+
+```
+private long sendProducerData(long now) {
+    Cluster cluster = metadata.fetch();
+    // 获取准备发送数据的分区列表
+    RecordAccumulator.ReadyCheckResult result = this.accumulator.ready(cluster, now);
+
+    // 如果有任何分区的领导者还不知道，强制更新元数据
+    if (!result.unknownLeaderTopics.isEmpty()) {
+        // 包含未知领导者的主题集合
+        // 包括正在等待选举领导者的主题以及可能已过期的主题。
+        // 将该主题再次添加到元数据中，以确保它被包括在内，
+        // 并请求元数据更新，因为有消息要发送到该主题。
+        for (String topic : result.unknownLeaderTopics) {
+            this.metadata.add(topic, now);
+        }
+
+        log.debug("Requesting metadata update due to unknown leader topics from the batched records: {}",
+                result.unknownLeaderTopics);
+        this.metadata.requestUpdate();
+    }
+
+    // 删除我们还没有准备好发送到的所有节点
+    Iterator<Node> iter = result.readyNodes.iterator();
+    long notReadyTimeout = Long.MAX_VALUE;
+    while (iter.hasNext()) {
+        Node node = iter.next();
+        if (!this.client.ready(node, now)) {
+            // 仅更新延迟统计数据的readyTimeMs，
+            // 以便在每次批处理就绪时向前移动
+            // (然后readyTimeMs和drainTimeMs之间的差异将表示数据等待节点的时间).
+            this.accumulator.updateNodeLatencyStats(node.id(), now, false);
+            iter.remove();
+            notReadyTimeout = Math.min(notReadyTimeout, this.client.pollDelayMs(node, now));
+        } else {
+            // 更新readyTimeMs和drainTimeMs，这将“重置”节点延迟.
+            this.accumulator.updateNodeLatencyStats(node.id(), now, true);
+        }
+    }
+
+    // 创建生产请求
+    Map<Integer, List<ProducerBatch>> batches = this.accumulator.drain(cluster, result.readyNodes, this.maxRequestSize, now);
+    addToInflightBatches(batches);
+    if (guaranteeMessageOrder) {
+        // Mute all the partitions drained
+        for (List<ProducerBatch> batchList : batches.values()) {
+            for (ProducerBatch batch : batchList) {
+                this.accumulator.mutePartition(batch.topicPartition);
+            }
+        }
+    }
+
+    accumulator.resetNextBatchExpiryTime();
+    List<ProducerBatch> expiredInflightBatches = getExpiredInflightBatches(now);
+    List<ProducerBatch>
+
+```
+
+##### poll
+
+```
+public List<ClientResponse> poll(long timeout, long now) { ensureActive();
+    if (!abortedSends.isEmpty()) {
+        // 如果有由于不支持的版本异常或断开连接而中止发送的请求，则立即处理它们，无需等待 Selector#poll。
+        List<ClientResponse> responses = new ArrayList<>();
+        handleAbortedSends(responses);
+        completeResponses(responses);
+        return responses;
+    }
+
+    // 更新元数据的超时时间
+    long metadataTimeout = metadataUpdater.maybeUpdate(now);
+    try {
+        // 调用 Selector#poll 进行轮询
+        this.selector.poll(Utils.min(timeout, metadataTimeout, defaultRequestTimeoutMs));
+    } catch (IOException e) {
+        log.error("I/O 错误", e);
+    }
+
+    // 处理已完成的操作
+    long updatedNow = this.time.milliseconds();
+    List<ClientResponse> responses = new ArrayList<>();
+    handleCompletedSends(responses, updatedNow);
+    handleCompletedReceives(responses, updatedNow);
+    handleDisconnections(responses, updatedNow);
+    handleConnections();
+    handleInitiateApiVersionRequests(updatedNow);
+    handleTimedOutConnections(responses, updatedNow);
+    handleTimedOutRequests(responses, updatedNow);
+    completeResponses(responses);
+
+    return responses;
+}
+```
+
+# 总结
+Kafka 生产者的设计具有多个精妙之处，其中包括：
+
+* 高效的异步发送：Kafka 生产者使用 RecordAccumulator 进行消息缓存，并利用 Sender 线程异步发送消息，这种设计可以提高消息发送的吞吐量。
+
+* 批量发送：Kafka 生产者可以将多个消息批量发送，从而减少网络开销和服务端的负载压力。
+
+* 可靠的重试机制：Kafka 生产者使用重试机制来保证消息能够成功发送，当消息发送失败时，生产者会自动进行重试，直到消息发送成功或者达到最大重试次数。
+
+* 动态分区分配：Kafka 生产者可以根据生产者和分区的数量动态分配分区，从而实现负载均衡和优化网络使用。
+
+* 可配置的消息压缩：Kafka 生产者支持多种消息压缩算法，可以根据实际需求进行配置，从而减少网络传输的数据量。
+这些设计使得 Kafka 生产者能够高效、可靠地发送消息，并适应不同的应用场景和需求。
+
+
