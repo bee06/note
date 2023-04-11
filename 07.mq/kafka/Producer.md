@@ -6,6 +6,7 @@ highlight: atelier-forest-light
 在 Kafka 中，生产者（Producer）负责将消息发送到 Kafka 集群，是实现高效数据流动的关键组件之一。本文将从源码层面分析 Kafka 生产者的实现细节，帮助读者更好地理解 Kafka 生产者的工作原理和性能特征。
 
 注明:
+> 本次源码分析基于kafka的3版本
 > 0.10.2 的 Kafka 中，其 Client 端是由 Java 实现，Server 端是由 Scala 来实现的
 
 # 能学到什么
@@ -189,7 +190,7 @@ KafkaProducer(ProducerConfig config,
             this.apiVersions = new ApiVersions();
             // 事务管理器
             this.transactionManager = configureTransactionState(config, logContext);
-            // There is no need to do work required for adaptive partitioning, if we use a custom partitioner.
+            // 如果我们使用自定义分区器，则无需执行自适应分区所需的工作.
             boolean enableAdaptivePartitioning = partitioner == null &&
                 config.getBoolean(ProducerConfig.PARTITIONER_ADPATIVE_PARTITIONING_ENABLE_CONFIG);
 
@@ -201,7 +202,7 @@ KafkaProducer(ProducerConfig config,
 
             // 按Kafka生产者配置配置大小。Size可以设置为0以显式禁用批处理，这实际上意味着使用批处理大小为1
             int batchSize = Math.max(1, config.getInt(ProducerConfig.BATCH_SIZE_CONFIG));
-            // 累加器
+            // 消息记录累加器
             this.accumulator = new RecordAccumulator(logContext,
                     batchSize,
                     this.compressionType,
@@ -233,6 +234,7 @@ KafkaProducer(ProducerConfig config,
                         Time.SYSTEM);
                 this.metadata.bootstrap(addresses);
             }
+            // 记录失败的监控数据
             this.errors = this.metrics.sensor("errors");
 
             // 创建发送器
@@ -324,13 +326,12 @@ private Future < RecordMetadata > doSend(ProducerRecord < K, V > record, Callbac
             this.sender.wakeup();
         }
         return result.future;
-        //处理异常并记录错误 对于 API 异常，将它们返回Future，对于其他异常直接抛出
-    } catch (ApiException e) {
         
+    } catch (ApiException e) {
+        //处理异常并记录错误 对于 API 异常，将它们返回Future，对于其他异常直接抛出
         if (callback != null) {
             TopicPartition tp = appendCallbacks.topicPartition();
-            RecordMetadata nullMetadata = new RecordMetadata(tp, -1, -1, RecordBatch.NO_TIMESTAMP, -1, -1);
-            callback.onCompletion(nullMetadata, e);
+            callback.onCompletion(new RecordMetadata(tp, -1, -1, RecordBatch.NO_TIMESTAMP, -1, -1), e);
         }
         this.errors.record();
         this.interceptors.onSendError(record, appendCallbacks.topicPartition(), e);
@@ -428,7 +429,6 @@ public RecordAppendResult append(String topic,
             // 循环-在遇到分区器的竞态条件时重试.
             while (true) {
                 
-
                 // 根据TopicPartition获取或新建Deque双端队列
                 Deque<ProducerBatch> dq = topicInfo.batches.computeIfAbsent(effectivePartition, k -> new ArrayDeque<>());
                 synchronized (dq) {
@@ -479,13 +479,11 @@ public RecordAppendResult append(String topic,
             appendsInProgress.decrementAndGet();
         }
     }
-
 ```
 
 ### tryAppend
 
 ```
-
 public FutureRecordMetadata tryAppend(long timestamp, byte[] key, byte[] value, Header[] headers, Callback callback, long now) {  
     if (!recordsBuilder.hasRoomFor(timestamp, key, value, headers)) {  
         return null;  
@@ -505,7 +503,6 @@ public FutureRecordMetadata tryAppend(long timestamp, byte[] key, byte[] value, 
         return future;  
     }  
 }
-
 ```
 * recordsBuilder.append的方法实际上是调用MemoryRecordsBuilder#appendWithOffset方法，代码如下
 ### MemoryRecordsBuilder#appendWithOffset
@@ -613,16 +610,14 @@ this.ioThread.start();
 
 #### Sender对象的组成
 
-
 ![iShot_2023-04-10_18.07.38.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3d2df43ea0e49bcbf3ce5df004892b3~tplv-k3u1fbpfcp-watermark.image?)
 
-sender类实现了Runnable接口,那么我们直接看run方法
+> sender类实现了Runnable接口,那么我们直接看run方法
 
 ##### Run
 
 ```
 public void run() {
-    log.debug("Starting Kafka producer I/O thread.");
 
     // main loop, runs until close is called
     while (running) {
@@ -633,9 +628,8 @@ public void run() {
         }
     }
     ... // 删除其他代码
-    log.debug("Shutdown of Kafka producer I/O thread has completed.");
+   
 }
-
 ```
 
 ##### runOnce
@@ -680,6 +674,7 @@ void runOnce() {
 
 ```
 private long sendProducerData(long now) {
+    // 获取当前集群的所有数据
     Cluster cluster = metadata.fetch();
     // 当前可发送数据的分区列表
     RecordAccumulator.ReadyCheckResult result = this.accumulator.ready(cluster, now);
@@ -708,7 +703,7 @@ private long sendProducerData(long now) {
     // 将可发送的批次添加到正在进行中的批次列表中。    
     Map<Integer, List<ProducerBatch>> batches = this.accumulator.drain(cluster, result.readyNodes, this.maxRequestSize, now);
     addToInflightBatches(batches);
-
+    // 保证发送消息的顺序
     if (guaranteeMessageOrder) {
         for (List<ProducerBatch> batchList : batches.values()) {
             for (ProducerBatch batch : batchList) {
@@ -748,8 +743,6 @@ private long sendProducerData(long now) {
     sendProduceRequests(batches, now);
     return pollTimeout;
 }
-
-
 ```
 
 ##### sendProduceRequests
@@ -792,7 +785,7 @@ private void sendProduceRequest(long now, int destination, short acks, int timeo
     if (transactionManager != null && transactionManager.isTransactional()) {
         transactionalId = transactionManager.transactionalId();
     }
-
+    // 将ProducerBatch转换为ProduceRequest
     ProduceRequest.Builder requestBuilder = ProduceRequest.forMagic(minUsedMagic,
             new ProduceRequestData()
                     .setAcks(acks)
@@ -802,15 +795,14 @@ private void sendProduceRequest(long now, int destination, short acks, int timeo
 
     RequestCompletionHandler callback = response -> handleProduceResponse(response, recordsByPartition, time.milliseconds());
 
-    String nodeId = Integer.toString(destination);
-    ClientRequest clientRequest = client.newClientRequest(nodeId, requestBuilder, now, acks != 0,
+     // 将ProduceRequest转换为clientRequest
+    ClientRequest clientRequest = client.newClientRequest(Integer.toString(destination), requestBuilder, now, acks != 0,
             requestTimeoutMs, callback);
+    // 调用NetworkClient将消息写入网络发送出去
     client.send(clientRequest, now);
 }
-
-
 ```
-client.send 是调用NetworkClient#doSend的方法来发送数据的
+* client.send 是调用NetworkClient#doSend的方法来发送数据的
 
 ##### NetworkClient#doSend
 
@@ -845,7 +837,6 @@ private void doSend(ClientRequest clientRequest, boolean isInternalRequest, long
                                                             clientRequest.callback(),
                                                             clientRequest.destination(), now, now, false,
                                                             unsupportedVersionException, null, null);
-
         if (!isInternalRequest)
             abortedSends.add(clientResponse);
         else if (clientRequest.apiKey() == ApiKeys.METADATA)
@@ -866,11 +857,10 @@ private void doSend(ClientRequest clientRequest, boolean isInternalRequest, long
         send,
         now
     );
+    // InFlightRequest(飞行队列)表示请求已经发送，但是还没有得到响应
     this.inFlightRequests.add(inFlightRequest);
     selector.send(new NetworkSend(destination, send));
 }
-
-
 ```
 
 ##### selector.send
@@ -891,7 +881,7 @@ public void send(NetworkSend send) {
         this.failedSends.add(connectionId);
     } else {
         try {
-            //将网络请求交给 KafkaChannel 对象处理
+            //将网络请求交给 KafkaChannel 对象处理，暂存数据预发送，并没有真正的发送
             channel.setSend(send);
         } catch (Exception e) {
             // 如果 KafkaChannel 对象在处理过程中抛出异常，将连接状态设置为 FAILED_SEND，并将连接 ID 添加到 failedSends 队列中，然后关闭连接，并将异常向上抛出，以便上层代码处理
@@ -910,52 +900,85 @@ public void send(NetworkSend send) {
 ##### poll
 
 ```
-public List<ClientResponse> poll(long timeout, long now) { ensureActive();
-    if (!abortedSends.isEmpty()) {
-        // 如果有由于不支持的版本异常或断开连接而中止发送的请求，则立即处理它们，无需等待 Selector#poll。
-        List<ClientResponse> responses = new ArrayList<>();
-        handleAbortedSends(responses);
-        completeResponses(responses);
-        return responses;
+public void poll(long timeout) throws IOException {
+    // 超时时间是否小于 0
+    if (timeout < 0) {
+        throw new IllegalArgumentException("timeout should be >= 0");
     }
 
-    // 更新元数据的超时时间
-    long metadataTimeout = metadataUpdater.maybeUpdate(now);
-    try {
-        // 调用 Selector#poll 进行轮询
-        this.selector.poll(Utils.min(timeout, metadataTimeout, defaultRequestTimeoutMs));
-    } catch (IOException e) {
-        log.error("I/O 错误", e);
+    boolean madeReadProgressLastCall = madeReadProgressLastPoll;
+    clear();
+
+    boolean dataInBuffers = !keysWithBufferedRead.isEmpty();
+
+    if (!immediatelyConnectedKeys.isEmpty() || (madeReadProgressLastCall && dataInBuffers)) {
+        timeout = 0;
     }
 
-    // 处理已完成的操作
-    long updatedNow = this.time.milliseconds();
-    List<ClientResponse> responses = new ArrayList<>();
-    handleCompletedSends(responses, updatedNow);
-    handleCompletedReceives(responses, updatedNow);
-    handleDisconnections(responses, updatedNow);
-    handleConnections();
-    handleInitiateApiVersionRequests(updatedNow);
-    handleTimedOutConnections(responses, updatedNow);
-    handleTimedOutRequests(responses, updatedNow);
-    completeResponses(responses);
+    //检查内存是否已经不足
+    if (!memoryPool.isOutOfMemory() && outOfMemory) {
+        
+        for (KafkaChannel channel : channels.values()) {
+            if (channel.isInMutableState() && !explicitlyMutedChannels.contains(channel)) {
+                channel.maybeUnmute();
+            }
+        }
+        outOfMemory = false;
+    }
 
-    return responses;
+    /* 检测已经准备好的keys */
+    long startSelect = time.nanoseconds();
+    //Java NIO 库提供的 select 方法
+    int numReadyKeys = select(timeout);
+    long endSelect = time.nanoseconds();
+    this.sensors.selectTime.record(endSelect - startSelect, time.milliseconds(), false);
+
+    if (numReadyKeys > 0 || !immediatelyConnectedKeys.isEmpty() || dataInBuffers) {
+        Set<SelectionKey> readyKeys = this.nioSelector.selectedKeys();
+
+        // 从缓冲了数据的通道进行轮询(但不再从底层套接字进行轮询)
+        if (dataInBuffers) {
+            keysWithBufferedRead.removeAll(readyKeys); //so no channel gets polled twice
+            Set<SelectionKey> toPoll = keysWithBufferedRead;
+            keysWithBufferedRead = new HashSet<>(); //poll() calls will repopulate if needed
+            pollSelectionKeys(toPoll, false, endSelect);
+        }
+
+        // 从底层套接字拥有更多数据的通道进行轮询
+        pollSelectionKeys(readyKeys, false, endSelect);
+
+        // 清除所有选定的键，使它们从下一次选择的就绪计数中排除
+        readyKeys.clear();
+
+        pollSelectionKeys(immediatelyConnectedKeys, true, endSelect);
+        immediatelyConnectedKeys.clear();
+    } else {
+        madeReadProgressLastPoll = true; 
+    }
+
+    long endIo = time.nanoseconds();
+    this.sensors.ioTime.record(endIo - endSelect, time.milliseconds(), false);
+
+    // 关闭被延迟的通道，现在可以关闭了
+    completeDelayedChannelClose(endIo);
+
+    // 我们使用select末尾的时间来确保不会关闭pollSelectionKeys中刚刚处理的任何连接
+    maybeCloseOldestConnection(endSelect);
 }
+
+
 ```
 
 # 总结
 Kafka 生产者的设计具有多个精妙之处，其中包括：
-
 * 高效的异步发送：Kafka 生产者使用 RecordAccumulator 进行消息缓存，并利用 Sender 线程异步发送消息，这种设计可以提高消息发送的吞吐量。
-
 * 批量发送：Kafka 生产者可以将多个消息批量发送，从而减少网络开销和服务端的负载压力。
-
 * 可靠的重试机制：Kafka 生产者使用重试机制来保证消息能够成功发送，当消息发送失败时，生产者会自动进行重试，直到消息发送成功或者达到最大重试次数。
-
 * 动态分区分配：Kafka 生产者可以根据生产者和分区的数量动态分配分区，从而实现负载均衡和优化网络使用。
-
 * 可配置的消息压缩：Kafka 生产者支持多种消息压缩算法，可以根据实际需求进行配置，从而减少网络传输的数据量。
-这些设计使得 Kafka 生产者能够高效、可靠地发送消息，并适应不同的应用场景和需求。
+
+# 遗留
+* RecordAccumulator对内存的操作逻辑没有分析透彻
+* selector#poll底层的逻辑也没有分析透彻
 
 
