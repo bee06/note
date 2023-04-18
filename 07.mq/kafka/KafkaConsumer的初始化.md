@@ -1,21 +1,22 @@
 # 概述
-KafkaConsumer是从Kafka服务端拉取消息的功能,KafkaConsumer 提供了一套封装良好的API，开发人员可以基于这套API 轻松实现从Kafka服务端拉取消息的功能，
-这样开发人员不必关心与Kafka 服务端之间网络连接的管理、心跳检测、请求超时重试等底层操作，
-也不必关心订阅Topic的分区数量、以及Consumer Group 的Rebalance 等具体细节， KafkaConsumer中还提供了自动提交offset 的功能
+KafkaConsumer是从Kafka服务端拉取消息的API，开发人员可以基于这套API轻松实现从Kafka服务端拉取消息的功能;
+消费者是如何与Kafka服务端之间实现网络连接的管理、心跳检测、请求超时重试等功能
+消费者是如何实现订阅Topic的分区数量、以及Consumer Group的重平衡、自动提交offset的功能。
 
-Kafka 服务端并不会记 录消费者的消费位置， 而是由消费者自己决定如何保存如何记录其消费的offset 。旧版本的消费者会将其消费位置记录到Zookeeper中，
-在新版本消贵者中为了缓解Zookeeper集群的压力，在Kafka服务端中添加了一个名为“
-consumer offsets”的内部Topic
-
-KafkaConsumer的三方面的工作内容:
+我们从的三部分介绍KafkaConsumer的源码:
 1. 消费者初始化(本文介绍)
 2. 消费者如何拉取的数据的
 3. 消费者是如何与协调者(ConsumerCoordinator)交互的
-   
-本节主要是介绍消费者初始化的相关内容
+
+来分析上面的问题
+
+
 
 # 名词解释
 消费组:消费者组是一组消费者，它们合作消费来自某些主题的数据
+offset:位移,Kafka服务端并不会记录消费者的消费位置， 而是由消费者自己决定如何保存如何记录其消费的offset。旧版本的消费者会将其消费位置记录到Zookeeper中，在新版本消贵者中为了缓解Zookeeper集群的压力，在Kafka服务端中添加了一个名为“consumer offsets”的内部Topic
+分区重新分配:当消费者上下线都会触发消费组进行重平衡操作，对分区进行重新分配，待重平衡操作完后，消费者就可以读取offserts topic中的记录的offset，并从offset位置继续消费。
+
 # 代码入口
 
 ```
@@ -71,21 +72,32 @@ public Consumer(final String topic,
 
 # 结构图
 
+![comsumer.png](image/comsumer.png)
+
+
+
 ## 说明
 
-* KafkaConsumerMetrics 消费端监控;
-* ConsumerCoordinator 协调器管理,负责分配 Consumer 和 Partition 的对应关系，当 Partition 或是 Consumer 发生变更是，会触发 reblance（重新分配）过程，重新分配 Consumer 与 Partition 的对应关系；
-* keyDeserializer key反序列化;
-* valueDeserializer value反序列化;
-* fetcher 负责从服务器拉取消息;
-* offsetFetcher 数据请求类;
-* TopicMetadataFetcher topic元数据拉取器;
+* KafkaConsumer 实现了Consumer接口,Consumer接口有6个行为:
+  * subscribe 方法:订阅指定的Topic，并为消费者自动分配分区。
+  * assign0方法:用户手动订阅指定的Topic，并且指定消费的分区。此方法与 subscribeQ 方法互斥，在后面会详细介绍是如何实现互斥的。
+  * commit 方法:提交消贵者已经消费完成的offset。
+  * seek 方法:指定消费者起始消贵的位置。
+  * poll 方法:负责从服务端获取消息。
+  * pause、resume 方法:暂停/ 继续Consumer，暂停后poll0 方法会返回空。
+* KafkaConsumerMetrics:消费端监控;
+* ConsumerCoordinator:协调器管理,负责分配 Consumer 和 Partition 的对应关系，当 Partition 或是 Consumer 发生变更是，会触发 reblance（重新分配）过程，重新分配 Consumer 与 Partition 的对应关系；
+* keyDeserializer:key反序列化;
+* valueDeserializer:value反序列化;
+* Fetcher:类的主要功能是发送 FetchRequest 请求，获取指定的消息集合，处理FeichResponse，更新消费位置
+* OffsetFetcher:数据请求类;
+* TopicMetadataFetcher:topic元数据拉取器;
 * ConsumerInterceptors:消费者拦截器集合
-* IsolationLevel 事务隔离级别
-* ConsumerNetworkClient 消费者的网络客户端，负责网络传输的流程;
-* SubscriptionState 维护消费者的消费状态;
-* ConsumerMetadata 记录消费者元数据;
-* ConsumerPartitionAssignor 消费者分区分配策略;
+* IsolationLevel:事务隔离级别
+* ConsumerNetworkClient:消费者的网络客户端，负责消费者和集群中的各个Node节点之间的连接
+* SubscriptionState:来跟踪TopicPartition和offset对应的关系
+* ConsumerMetadata:记录消费者元数据;
+* ConsumerPartitionAssignor:消费者分区分配策略;
 
 
 # 构造方法
@@ -93,9 +105,7 @@ public Consumer(final String topic,
 ## 消费组的平衡配置类
 ```
 // 消费组的平衡配置类
-GroupRebalanceConfig groupRebalanceConfig = new GroupRebalanceConfig(config,
-        GroupRebalanceConfig.ProtocolType.CONSUMER);
-
+GroupRebalanceConfig groupRebalanceConfig = new GroupRebalanceConfig(config,  GroupRebalanceConfig.ProtocolType.CONSUMER);
 this.groupId = Optional.ofNullable(groupRebalanceConfig.groupId);
 ```
 * 初始化消费组的平衡配置类
@@ -318,4 +328,8 @@ FetchConfig<K, V> fetchConfig = new FetchConfig<>(config,
 
 
 # 总结
-* 掌握KafkaConsumer消费者都包含了哪些核心组件，他们的职责
+* 掌握KafkaConsumer消费者都包含了哪些核心组件以及他们的职责
+  * 依赖SubscriptionState管 理订阅的Topic 集合和Partition 的消费状态
+  * 通过ConsumerCoordinator 与服务端的 GroupCoordinator 交互，完成Rebalance 操作并请求最近提交的offset
+  * Fetcher 负责从 Kafka中拉取消息并进行解析，同时参与position 的重置操作，提供获取指定Topic的集群元数据的操作
+  * 所有请求都是通过ConsumerNetworkClient 缓存并发送的
