@@ -8,7 +8,7 @@ Rule-Engine 是一个专家系统程序，它对输入数据运行规则，如�
 * Maven：项目框架
 * MVEL 2.4：编写规则的表达式语言。
 * PostgreSQL 9.4 数据库：用于存储规则。
-*  Spring JPA：用于数据库连接
+* Spring JPA：用于数据库连接
 
 # 架构图
 
